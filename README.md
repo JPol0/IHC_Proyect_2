@@ -1,4 +1,4 @@
-# IHC_Proyect_1
+# IHC_Proyect_2
 
 Proyecto para la asignatura de Interacción Humano-Computadora (IHC). Es un constructor visual de páginas (page builder) desarrollado principalmente con React y la librería Craft.js. El caso de estudio del proyecto es la creación de una página sobre la Amazonia, demostrando la composición dinámica de contenidos geográficos, imágenes y textos mediante componentes arrastrables y configurables.
 
