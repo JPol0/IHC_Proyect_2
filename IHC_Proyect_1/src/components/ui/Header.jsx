@@ -436,13 +436,6 @@ export default function Header({ nameSection, siteId = null }) {
           >
             Inicio
           </button>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            onClick={() => navigate('/blogs')}
-          >
-            Blogs
-          </button>
         </div>
       </div>
       <div className="d-flex align-items-center gap-2">
