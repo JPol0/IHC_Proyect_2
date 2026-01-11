@@ -9,6 +9,8 @@ import { hasClipboard } from "../../hooks/useCopyPasteSection";
 import { getFolders, createFolder, deleteFolder, moveSectionToFolder, getSectionFolderId, getSectionsByFolder } from "../../hooks/useFolders";
 import SectionMenu from "./SectionMenu";
 import { getSiteIdBySlug } from "../../hooks/useSites";
+import { getTemplate } from "../../hooks/useTemplates";
+import TemplateSelector from "./TemplateSelector";
 
 const Sidebar = ({ items = [] }) => {
   const { pathname, search } = useLocation();
@@ -38,6 +40,8 @@ const Sidebar = ({ items = [] }) => {
   const [draggedSection, setDraggedSection] = useState(null);
   const [draggedOverFolder, setDraggedOverFolder] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   // Cargar carpetas y mapeo de secciones
   useEffect(() => {
@@ -64,12 +68,32 @@ const Sidebar = ({ items = [] }) => {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
+    
+    // Si hay una plantilla seleccionada, usarla; si no, crear vacío
+    let initialJson;
+    if (selectedTemplate) {
+      const template = getTemplate(selectedTemplate);
+      if (template) {
+        initialJson = template.template;
+      } else {
+        initialJson = { ROOT: { type: { resolvedName: 'BackgroundImageContainer' }, isCanvas: true, props: { padding: 10, background: '#f5f5f5' }, displayName: 'BackgroundImageContainer', custom: {}, hidden: false, nodes: [], linkedNodes: {} } };
+      }
+    } else {
+      initialJson = { ROOT: { type: { resolvedName: 'BackgroundImageContainer' }, isCanvas: true, props: { padding: 10, background: '#f5f5f5' }, displayName: 'BackgroundImageContainer', custom: {}, hidden: false, nodes: [], linkedNodes: {} } };
+    }
+    
     setCreating(true);
-    const initialJson = { ROOT: { type: { resolvedName: 'BackgroundImageContainer' }, isCanvas: true, props: { padding: 10, background: '#f5f5f5' }, displayName: 'BackgroundImageContainer', custom: {}, hidden: false, nodes: [], linkedNodes: {} } };
-  const result = await createSection(name, initialJson, siteId);
+    const result = await createSection(name, initialJson, siteId);
     if (result.ok) {
       setNewName("");
+      setSelectedTemplate(null);
+      setShowTemplateSelector(false);
       await refetch();
+      // Navegar a la nueva sección
+      const qs = new URLSearchParams();
+      if (siteSlug) qs.set('site', siteSlug);
+      qs.set('section', name);
+      navigate(`/editor?${qs.toString()}`);
     } else if (result.code === 'exists') {
       alert('La sección ya existe.');
     } else {
@@ -251,19 +275,52 @@ const Sidebar = ({ items = [] }) => {
           </div>
 
           {/* Form para crear una nueva sección */}
-          <form className="d-flex gap-2 mb-2" onSubmit={handleCreate}>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              placeholder="Nueva sección"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              disabled={creating}
-              aria-label="Nombre de nueva sección"
-            />
-            <button type="submit" className="btn btn-sm btn-primary" disabled={creating || !newName.trim()}>
-              {creating ? 'Creando…' : 'Crear'}
+          <form className="d-flex flex-column gap-2 mb-2" onSubmit={handleCreate}>
+            <div className="d-flex gap-2">
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="Nueva sección"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                disabled={creating}
+                aria-label="Nombre de nueva sección"
+              />
+              <button type="submit" className="btn btn-sm btn-primary" disabled={creating || !newName.trim()}>
+                {creating ? 'Creando…' : 'Crear'}
+              </button>
+            </div>
+            
+            {/* Botón para seleccionar plantilla */}
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-a50104 w-100"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowTemplateSelector(true);
+              }}
+            >
+              <i className="bi bi-grid me-1"></i> Elegir Plantilla
             </button>
+            
+            {/* Mostrar plantilla seleccionada */}
+            {selectedTemplate && (
+              <div className="alert alert-info py-2 px-2 mb-2 small">
+                <i className="bi bi-check-circle me-1"></i>
+                Plantilla: {getTemplate(selectedTemplate)?.name || selectedTemplate}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-link p-0 ms-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedTemplate(null);
+                  }}
+                  title="Quitar plantilla"
+                >
+                  <i className="bi bi-x"></i>
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Botón para crear carpeta */}
@@ -442,6 +499,19 @@ const Sidebar = ({ items = [] }) => {
           )}
         </div>
       </div>
+      
+      {/* Selector de plantillas */}
+      {showTemplateSelector && (
+        <TemplateSelector
+          selectedTemplate={selectedTemplate}
+          onSelectTemplate={(templateId) => {
+            setSelectedTemplate(templateId);
+          }}
+          onClose={() => {
+            setShowTemplateSelector(false);
+          }}
+        />
+      )}
     </aside>
   );
 };
