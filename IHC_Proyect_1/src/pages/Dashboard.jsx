@@ -123,6 +123,33 @@ function Dashboard() {
             </div>
 
             {/* Tarjeta de Exportar eliminada */}
+            
+            {/* Card 3: Gestionar Foro */}
+            <div className="col-md-4">
+              <div className="card h-100 shadow-sm border-0">
+                <div className="card-body d-flex flex-column p-4">
+                  <div className="mb-3 d-flex justify-content-center">
+                    <div 
+                      className="rounded-circle bg-light d-flex align-items-center justify-content-center position-relative"
+                      style={{ width: '64px', height: '64px' }}
+                    >
+                      <i className="bi bi-chat-square-text text-danger" style={{ fontSize: '2rem' }}></i>
+                    </div>
+                  </div>
+                  <h5 className="card-title fw-bold mb-3 text-center">Gestionar Foro</h5>
+                  <p className="card-text text-muted mb-4 text-center flex-grow-1">
+                    Administra categorías, temas y respuestas del foro de la comunidad.
+                  </p>
+                  <button 
+                    className="btn btn-outline-secondary mt-auto"
+                    onClick={() => navigate('/forum')}
+                  >
+                    Ir al Foro
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
