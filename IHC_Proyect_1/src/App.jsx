@@ -3,6 +3,9 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Editor from './pages/Editor.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Sites from './pages/Sites.jsx';
+import ForumCategories from './pages/Forum/ForumCategories.jsx';
+import ForumTopics from './pages/Forum/ForumTopics.jsx';
+import ForumThread from './pages/Forum/ForumThread.jsx';
 
 // Vista simple para placeholders
 function Page({ title, children }) {
@@ -41,6 +44,11 @@ export default function App() {
           {/* Rutas principales */}
           <Route path="/editor" element={<Editor nameSection={"editor"}/>} />
           <Route path="/sites" element={<Sites />} />
+
+          {/* Rutas del Foro */}
+          <Route path="/forum" element={<ForumCategories />} />
+          <Route path="/forum/:catSlug" element={<ForumTopics />} />
+          <Route path="/forum/topic/:topicId" element={<ForumThread />} />
 
           {/* Rutas del Sidebar usando renderizado condicional por ruta */}
           <Route path="/indice" element={<Page title="Índice">Página índice.</Page>} />
