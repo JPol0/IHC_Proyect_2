@@ -12,7 +12,7 @@ import {BackgroundImageContainer} from "../user/ImageContainer";
 import { FileDownload } from '../user/FileDownload';
 import { ForumButton } from '../user/ForumButton';
 import Sidebar from "./Sidebar";
-
+import { Navbar } from '../user/Navbar';
 import { LikeButton } from '../user/LikeButton';
 
 
@@ -138,6 +138,14 @@ export default function Palette() {
                 type="button"
               >
                 <span className="bi bi-heart"></span> Me Gusta
+              </button>
+
+              <button
+                ref={(ref) => ref && connectors.create(ref, <Navbar />)}
+                className="btn btn-light d-flex align-items-center gap-2 text-start"
+                type="button"
+              >
+                <span className="bi bi-menu-button-wide"></span> Navbar
               </button>
             </div>
           </div>
