@@ -9,6 +9,7 @@ import { ChevronButton } from '../user/ChevronButton';
 import { IconButton } from '../user/IconButton';
 import {BackgroundImageContainer} from "../user/ImageContainer";
 import { FileDownload } from '../user/FileDownload';
+import { LikeButton } from '../user/LikeButton';
 import Sidebar from "./Sidebar";
 
 export default function Palette() {
@@ -116,6 +117,14 @@ export default function Palette() {
                 type="button"
               >
                 <span className="bi bi-download"></span> Archivo descargable
+              </button>
+
+              <button
+                ref={(ref) => ref && connectors.create(ref, <LikeButton />)}
+                className="btn btn-light d-flex align-items-center gap-2 text-start"
+                type="button"
+              >
+                <span className="bi bi-heart"></span> Me Gusta
               </button>
             </div>
           </div>
