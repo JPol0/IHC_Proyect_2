@@ -15,6 +15,7 @@ import { BackgroundImageContainer } from "../user/ImageContainer";
 import { FileDownload } from '../user/FileDownload';
 import { ForumButton } from '../user/ForumButton';
 import { LikeButton } from '../user/LikeButton';
+import { Navbar } from '../user/Navbar';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -98,6 +99,7 @@ export default function LeftSidebar() {
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <LikeButton />)} icon="bi-heart" label="Like" />
                        
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>)} icon="bi-layout-sidebar" label="Columns" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Navbar />)} icon="bi-menu-button-wide" label="Navbar" />
                     </div>
                 </div>
             )}
