@@ -23,9 +23,13 @@ export default function SettingsLite() {
 
   return selected ? (
     <div className="p-3">
+      {/* 
       <div className="d-flex align-items-center justify-content-between mb-3">
-        <div className="fw-semibold">Seleccionado {selected.name}</div>
-      </div>
+        <div className="fw-semibold">
+            Propiedades: {selected.name}
+        </div>
+      </div> 
+      */}
 
       {selected.settings && typeof selected.settings === 'function' && (
         <div className="mb-3">

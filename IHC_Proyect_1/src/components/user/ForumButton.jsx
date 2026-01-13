@@ -1,6 +1,7 @@
 import React from "react";
 import { useNode } from "@craftjs/core";
 import { useNavigate } from "react-router-dom";
+import { SettingsTabs } from "../ui/SettingsTabs";
 
 export const ForumButton = ({ text, ...props }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
@@ -40,17 +41,24 @@ export const ForumButtonSettings = () => {
   }));
 
   return (
-    <div>
-      <div className="mb-3">
-        <label className="form-label">Texto del botón</label>
-        <input
-          type="text"
-          className="form-control"
-          value={text}
-          onChange={(e) => setProp((props) => (props.text = e.target.value))}
-        />
-      </div>
-    </div>
+    <SettingsTabs
+      tabs={[
+        {
+          label: "General",
+          content: (
+            <div className="mb-3">
+              <label className="form-label">Texto del botón</label>
+              <input
+                type="text"
+                className="form-control"
+                value={text}
+                onChange={(e) => setProp((props) => (props.text = e.target.value))}
+              />
+            </div>
+          )
+        }
+      ]}
+    />
   );
 };
 

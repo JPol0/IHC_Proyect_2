@@ -2,6 +2,7 @@
 import React from "react";
 import { useNode, useEditor } from "@craftjs/core";
 import { useNavigate } from "react-router-dom";
+import { useUploadImage } from "../../hooks/useUploadImage";
 
 export const Navbar = ({
   // Logo props
@@ -300,6 +301,8 @@ const NavbarSettings = () => {
   const { actions: { setProp }, props } = useNode((node) => ({
     props: node.data.props
   }));
+
+  const { upload, isUploading } = useUploadImage("Assets");
   
   // Parse current items
   let currentItems = [];
@@ -345,424 +348,367 @@ const NavbarSettings = () => {
   };
 
   return (
-    <>
-      <div className="d-grid gap-3">
-        {/* Logo Settings */}
-        <div className="border-bottom pb-3">
-          <h6 className="mb-3">Logo</h6>
-          <div className="row g-2 mb-2">
-            <div className="col-6">
-              <div className="form-check">
+    <SettingsTabs
+      tabs={[
+        {
+          label: "Logo",
+          content: (
+            <div className="d-grid gap-3">
+              <div className="form-check form-switch">
                 <input
-                  id="navbar-show-logo"
                   className="form-check-input"
                   type="checkbox"
                   checked={props.showLogo !== false}
                   onChange={(e) => setProp((p) => (p.showLogo = e.target.checked))}
                 />
-                <label className="form-check-label" htmlFor="navbar-show-logo">Mostrar icono/imagen</label>
+                <label className="form-check-label">Mostrar imagen</label>
               </div>
-            </div>
-            <div className="col-6">
-              <div className="form-check">
+
+              {props.showLogo !== false && (
+                <>
+                  <div>
+                    <label className="form-label">Imagen</label>
+                    <div className="d-flex gap-2">
+                       <input
+                        className="form-control form-control-sm"
+                        type="file"
+                        accept="image/*"
+                         onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const url = await upload(file);
+                          if (url) setProp((p) => (p.logoImageUrl = url));
+                        }}
+                        disabled={isUploading}
+                      />
+                    </div>
+                    {isUploading && <div className="text-info small mt-1">Subiendo...</div>}
+                    {props.logoImageUrl && (
+                      <div className="mt-2">
+                        <img 
+                          src={props.logoImageUrl} 
+                          alt="Logo preview" 
+                          style={{ height: '30px', objectFit: 'contain' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="form-label">Tamaño imagen (px)</label>
+                    <input
+                      className="form-control form-control-sm"
+                      type="number"
+                      value={props.logoSize || 32}
+                      onChange={(e) => setProp((p) => (p.logoSize = Number(e.target.value)))}
+                    />
+                  </div>
+                </>
+              )}
+
+              <hr />
+
+              <div className="form-check form-switch">
                 <input
-                  id="navbar-show-logo-text"
                   className="form-check-input"
                   type="checkbox"
                   checked={props.showLogoText !== false}
                   onChange={(e) => setProp((p) => (p.showLogoText = e.target.checked))}
                 />
-                <label className="form-check-label" htmlFor="navbar-show-logo-text">Mostrar texto</label>
+                <label className="form-check-label">Mostrar texto</label>
               </div>
-            </div>
-          </div>
-          <div className="mb-2">
-            <label className="form-label">Texto del logo</label>
-            <input
-              className="form-control form-control-sm"
-              type="text"
-              value={props.logoText || ''}
-              onChange={(e) => setProp((p) => (p.logoText = e.target.value))}
-            />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">URL imagen logo (opcional)</label>
-            <input
-              className="form-control form-control-sm"
-              type="text"
-              value={props.logoImageUrl || ''}
-              onChange={(e) => setProp((p) => (p.logoImageUrl = e.target.value))}
-              placeholder="https://..."
-            />
-            <small className="text-muted">Si se proporciona, reemplaza el icono por defecto</small>
-          </div>
-          <div className="row g-2 mb-2">
-            <div className="col-6">
-              <label className="form-label">Tamaño icono/imagen</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={props.logoSize || 32}
-                onChange={(e) => setProp((p) => (p.logoSize = Number(e.target.value)))}
-              />
-            </div>
-            <div className="col-6">
-              <label className="form-label">Tamaño texto</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={props.logoTextSize || 22}
-                onChange={(e) => setProp((p) => (p.logoTextSize = Number(e.target.value)))}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="form-label">Color texto logo</label>
-            <input
-              type="color"
-              className="form-control form-control-color form-control-sm"
-              value={props.logoTextColor || '#ffffff'}
-              onChange={(e) => setProp((p) => (p.logoTextColor = e.target.value))}
-            />
-          </div>
-        </div>
-        
-        {/* Styling */}
-        <div className="border-bottom pb-3">
-          <h6 className="mb-3">Estilos</h6>
-          <div className="row g-2 mb-2">
-            <div className="col-6">
-              <label className="form-label">Fondo</label>
-              <input
-                type="color"
-                className="form-control form-control-color"
-                value={props.backgroundColor || '#1a1a1a'}
-                onChange={(e) => setProp((p) => (p.backgroundColor = e.target.value))}
-              />
-            </div>
-            <div className="col-6">
-              <label className="form-label">Color items</label>
-              <input
-                type="color"
-                className="form-control form-control-color"
-                value={props.itemColor || '#ffffff'}
-                onChange={(e) => setProp((p) => (p.itemColor = e.target.value))}
-              />
-            </div>
-          </div>
-          <div className="row g-2 mb-2">
-            <div className="col-6">
-              <label className="form-label">Color hover</label>
-              <input
-                type="color"
-                className="form-control form-control-color"
-                value={props.itemHoverColor || '#ff6b35'}
-                onChange={(e) => setProp((p) => (p.itemHoverColor = e.target.value))}
-              />
-            </div>
-            <div className="col-6">
-              <label className="form-label">Color activo</label>
-              <input
-                type="color"
-                className="form-control form-control-color"
-                value={props.activeItemColor || '#ff6b35'}
-                onChange={(e) => setProp((p) => (p.activeItemColor = e.target.value))}
-              />
-            </div>
-          </div>
-          <div className="row g-2">
-            <div className="col-6">
-              <label className="form-label">Tamaño fuente</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={props.itemFontSize || 14}
-                onChange={(e) => setProp((p) => (p.itemFontSize = Number(e.target.value)))}
-              />
-            </div>
-            <div className="col-6">
-              <label className="form-label">Espaciado items</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={props.itemSpacing || 24}
-                onChange={(e) => setProp((p) => (p.itemSpacing = Number(e.target.value)))}
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Separator */}
-        <div className="border-bottom pb-3">
-          <h6 className="mb-3">Separador</h6>
-          <div className="form-check mb-2">
-            <input
-              id="navbar-show-sep"
-              className="form-check-input"
-              type="checkbox"
-              checked={props.showSeparator !== false}
-              onChange={(e) => setProp((p) => (p.showSeparator = e.target.checked))}
-            />
-            <label className="form-check-label" htmlFor="navbar-show-sep">Mostrar separadores</label>
-          </div>
-          <div>
-            <label className="form-label">Color separador</label>
-            <input
-              type="color"
-              className="form-control form-control-color"
-              value={props.separatorColor || '#666666'}
-              onChange={(e) => setProp((p) => (p.separatorColor = e.target.value))}
-            />
-          </div>
-        </div>
-        
-        {/* Layout */}
-        <div className="border-bottom pb-3">
-          <h6 className="mb-3">Disposición</h6>
-          <div className="row g-2 mb-2">
-            <div className="col-6">
-              <label className="form-label">Padding horizontal</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={props.paddingX || 32}
-                onChange={(e) => setProp((p) => (p.paddingX = Number(e.target.value)))}
-              />
-            </div>
-            <div className="col-6">
-              <label className="form-label">Padding vertical</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={props.paddingY || 16}
-                onChange={(e) => setProp((p) => (p.paddingY = Number(e.target.value)))}
-              />
-            </div>
-          </div>
-          <div className="mb-2">
-            <label className="form-label">Posición logo</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.logoPosition || 'left'}
-              onChange={(e) => setProp((p) => (p.logoPosition = e.target.value))}
-            >
-              <option value="left">Izquierda</option>
-              <option value="center">Centro</option>
-              <option value="right">Derecha</option>
-            </select>
-          </div>
-          <div className="mb-2">
-            <label className="form-label">Posición items</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.itemsPosition || 'center'}
-              onChange={(e) => setProp((p) => (p.itemsPosition = e.target.value))}
-            >
-              <option value="left">Izquierda</option>
-              <option value="center">Centro</option>
-              <option value="right">Derecha</option>
-            </select>
-          </div>
-          <div className="form-check">
-            <input
-              id="navbar-sticky"
-              className="form-check-input"
-              type="checkbox"
-              checked={!!props.isSticky}
-              onChange={(e) => setProp((p) => (p.isSticky = e.target.checked))}
-            />
-            <label className="form-check-label" htmlFor="navbar-sticky">Navbar fijo (sticky)</label>
-          </div>
-        </div>
-        
-        {/* Navigation Items */}
-        <div className="border-bottom pb-3">
-          <h6 className="mb-3">Items de navegación</h6>
-          <div className="d-grid gap-2 mb-3">
-            {currentItems.map((item, index) => (
-              <div key={index} className="card card-body p-2 bg-light">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <strong className="small">Item {index + 1}</strong>
-                  <div className="btn-group btn-group-sm">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => moveItem(index, -1)}
-                      disabled={index === 0}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => moveItem(index, 1)}
-                      disabled={index === currentItems.length - 1}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => removeItem(index)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-                <div className="mb-2">
-                  <input
-                    className="form-control form-control-sm"
-                    type="text"
-                    value={item.label || ''}
-                    onChange={(e) => updateItem(index, 'label', e.target.value)}
-                    placeholder="Etiqueta"
-                  />
-                </div>
-                <div className="mb-2">
-                  <select
-                    className="form-select form-select-sm"
-                    value={item.actionType || 'section'}
-                    onChange={(e) => updateItem(index, 'actionType', e.target.value)}
-                  >
-                    <option value="section">Ir a sección</option>
-                    <option value="route">Ruta interna</option>
-                    <option value="external">Enlace externo</option>
-                  </select>
-                </div>
-                {item.actionType === 'section' && (
-                  <input
-                    className="form-control form-control-sm"
-                    type="text"
-                    value={item.sectionName || ''}
-                    onChange={(e) => updateItem(index, 'sectionName', e.target.value)}
-                    placeholder="Nombre de sección"
-                  />
-                )}
-                {item.actionType === 'route' && (
-                  <input
-                    className="form-control form-control-sm"
-                    type="text"
-                    value={item.route || ''}
-                    onChange={(e) => updateItem(index, 'route', e.target.value)}
-                    placeholder="/ruta"
-                  />
-                )}
-                {item.actionType === 'external' && (
-                  <div className="d-grid gap-1">
+
+              {props.showLogoText !== false && (
+                <>
+                  <div>
+                    <label className="form-label">Texto del Logo</label>
                     <input
                       className="form-control form-control-sm"
                       type="text"
-                      value={item.externalUrl || ''}
-                      onChange={(e) => updateItem(index, 'externalUrl', e.target.value)}
-                      placeholder="https://..."
+                      value={props.logoText || ''}
+                      onChange={(e) => setProp((p) => (p.logoText = e.target.value))}
                     />
-                    <div className="form-check">
-                      <input
-                        id={`item-newtab-${index}`}
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={item.newTab !== false}
-                        onChange={(e) => updateItem(index, 'newTab', e.target.checked)}
-                      />
-                      <label className="form-check-label small" htmlFor={`item-newtab-${index}`}>
-                        Abrir en nueva pestaña
-                      </label>
-                    </div>
                   </div>
-                )}
+                  <div>
+                    <label className="form-label">Tamaño texto (px)</label>
+                    <input
+                      className="form-control form-control-sm"
+                      type="number"
+                      value={props.logoTextSize || 22}
+                      onChange={(e) => setProp((p) => (p.logoTextSize = Number(e.target.value)))}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Color texto</label>
+                    <input
+                      type="color"
+                      className="form-control form-control-color"
+                      value={props.logoTextColor || '#ffffff'}
+                      onChange={(e) => setProp((p) => (p.logoTextColor = e.target.value))}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        },
+        {
+          label: "Menú",
+          content: (
+            <div className="d-grid gap-3">
+              <label className="form-label mb-0">Elementos del menú</label>
+              <div className="border rounded p-2 bg-light">
+                <div className="d-grid gap-2">
+                  {currentItems.map((item, index) => (
+                    <div key={index} className="card p-2">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <div className="btn-group btn-group-sm">
+                          <button
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => moveItem(index, -1)}
+                            disabled={index === 0}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => moveItem(index, 1)}
+                            disabled={index === currentItems.length - 1}
+                          >
+                            ↓
+                          </button>
+                        </div>
+                        <button 
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => removeItem(index)}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
+                      
+                      <div className="mb-2">
+                        <input
+                          className="form-control form-control-sm"
+                          placeholder="Etiqueta"
+                          value={item.label}
+                          onChange={(e) => updateItem(index, 'label', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="mb-2">
+                        <select
+                          className="form-select form-select-sm"
+                          value={item.actionType || 'none'}
+                          onChange={(e) => updateItem(index, 'actionType', e.target.value)}
+                        >
+                          <option value="none">Sin acción</option>
+                          <option value="section">Ir a Sección</option>
+                          <option value="external">Link Externo</option>
+                          <option value="route">Ruta Interna</option>
+                        </select>
+                      </div>
+
+                      {item.actionType === 'section' && (
+                        <input
+                          className="form-control form-control-sm mb-2"
+                          placeholder="Nombre sección (ej: foro)"
+                          value={item.sectionName || ''}
+                          onChange={(e) => updateItem(index, 'sectionName', e.target.value)}
+                        />
+                      )}
+
+                      {item.actionType === 'external' && (
+                        <div className="d-grid gap-1">
+                          <input
+                            className="form-control form-control-sm mb-2"
+                            placeholder="URL (https://...)"
+                            value={item.externalUrl || ''}
+                            onChange={(e) => updateItem(index, 'externalUrl', e.target.value)}
+                          />
+                           <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={item.newTab !== false}
+                              onChange={(e) => updateItem(index, 'newTab', e.target.checked)}
+                            />
+                            <label className="form-check-label small">Nueva pestaña</label>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {item.actionType === 'route' && (
+                        <input
+                          className="form-control form-control-sm mb-2"
+                          placeholder="Ruta (ej: /login)"
+                          value={item.route || ''}
+                          onChange={(e) => updateItem(index, 'route', e.target.value)}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <button 
+                  className="btn btn-sm btn-primary w-100 mt-2"
+                  onClick={addItem}
+                >
+                  <i className="bi bi-plus-circle me-1"></i> Agregar Item
+                </button>
               </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm w-100"
-            onClick={addItem}
-          >
-            + Agregar item
-          </button>
-        </div>
-        
-        {/* Positioning */}
-        <div className="border-bottom pb-3">
-          <h6 className="mb-3">Posición</h6>
-          <div className="row g-2 mb-2">
-            <div className="col-6">
-              <label className="form-label">Mover X (px)</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={Number.isFinite(props.translateX) ? props.translateX : 0}
-                onChange={(e) => setProp((p) => (p.translateX = Number(e.target.value)))}
-              />
             </div>
-            <div className="col-6">
-              <label className="form-label">Mover Y (px)</label>
-              <input
-                className="form-control form-control-sm"
-                type="number"
-                value={Number.isFinite(props.translateY) ? props.translateY : 0}
-                onChange={(e) => setProp((p) => (p.translateY = Number(e.target.value)))}
-              />
+          )
+        },
+        {
+          label: "Diseño",
+          content: (
+            <div className="d-grid gap-3">
+              <div>
+                <label className="form-label">Color Fondo</label>
+                <input
+                  type="color"
+                  className="form-control form-control-color"
+                  value={props.backgroundColor}
+                  onChange={(e) => setProp((p) => (p.backgroundColor = e.target.value))}
+                />
+              </div>
+
+              <div className="row g-2">
+                <div className="col-6">
+                  <label className="form-label">Color Items</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={props.itemColor}
+                    onChange={(e) => setProp((p) => (p.itemColor = e.target.value))}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label">Color Hover</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={props.itemHoverColor}
+                    onChange={(e) => setProp((p) => (p.itemHoverColor = e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Tamaño Fuente</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="number"
+                  value={props.itemFontSize}
+                  onChange={(e) => setProp((p) => (p.itemFontSize = Number(e.target.value)))}
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Espaciado Items</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="number"
+                  value={props.itemSpacing}
+                  onChange={(e) => setProp((p) => (p.itemSpacing = Number(e.target.value)))}
+                />
+              </div>
+
+              <div className="form-check mt-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={props.isSticky}
+                  onChange={(e) => setProp((p) => (p.isSticky = e.target.checked))}
+                />
+                <label className="form-check-label">Pegajoso (Sticky)</label>
+              </div>
             </div>
-          </div>
-          <div className="mb-2">
-            <label className="form-label">Z-index</label>
-            <input
-              className="form-control form-control-sm"
-              type="number"
-              value={props.zIndex || 100}
-              onChange={(e) => setProp((p) => (p.zIndex = Number(e.target.value)))}
-            />
-          </div>
-          <div>
-            <label className="form-label">Opacidad</label>
-            <input
-              type="range"
-              className="form-range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={Number.isFinite(props.opacity) ? props.opacity : 1}
-              onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
-            />
-            <div className="small text-muted">{(props.opacity ?? 1).toFixed(2)}</div>
-          </div>
-        </div>
-        
-        {/* Size */}
-        <div>
-          <h6 className="mb-3">Tamaño</h6>
-          <div className="row g-2">
-            <div className="col-6">
-              <label className="form-label">Ancho</label>
-              <input
-                className="form-control form-control-sm"
-                type="text"
-                value={props.width ?? '100%'}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProp((p) => (p.width = v === '' ? '100%' : (isNaN(Number(v)) ? v : Number(v))));
-                }}
-                placeholder="100% o 960"
-              />
+          )
+        },
+        {
+          label: "Avanzado",
+          content: (
+            <div className="d-grid gap-3">
+              <div>
+                <label className="form-label">Padding Y / X</label>
+                <div className="input-group input-group-sm">
+                  <input
+                    className="form-control"
+                    type="number"
+                    value={props.paddingY}
+                    onChange={(e) => setProp((p) => (p.paddingY = Number(e.target.value)))}
+                    placeholder="Y"
+                  />
+                  <input
+                    className="form-control"
+                    type="number"
+                    value={props.paddingX}
+                    onChange={(e) => setProp((p) => (p.paddingX = Number(e.target.value)))}
+                    placeholder="X"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Separador</label>
+                <div className="d-flex align-items-center gap-2">
+                  <input
+                    className="form-check-input m-0"
+                    type="checkbox"
+                    checked={props.showSeparator !== false}
+                    onChange={(e) => setProp((p) => (p.showSeparator = e.target.checked))}
+                  />
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={props.separatorColor}
+                    onChange={(e) => setProp((p) => (p.separatorColor = e.target.value))}
+                    disabled={!props.showSeparator}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Z-Index</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="number"
+                  value={props.zIndex}
+                  onChange={(e) => setProp((p) => (p.zIndex = Number(e.target.value)))}
+                />
+              </div>
+
+               <div className="row g-2">
+                <div className="col-6">
+                  <label className="form-label">Ancho</label>
+                  <input
+                    className="form-control form-control-sm"
+                    type="text"
+                    value={props.width ?? '100%'}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProp((p) => (p.width = v === '' ? '100%' : (isNaN(Number(v)) ? v : Number(v))));
+                    }}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label">Alto</label>
+                  <input
+                    className="form-control form-control-sm"
+                    type="text"
+                    value={props.height ?? 'auto'}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProp((p) => (p.height = v === '' ? 'auto' : (isNaN(Number(v)) ? v : Number(v))));
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="col-6">
-              <label className="form-label">Alto</label>
-              <input
-                className="form-control form-control-sm"
-                type="text"
-                value={props.height ?? 'auto'}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProp((p) => (p.height = v === '' ? 'auto' : (isNaN(Number(v)) ? v : Number(v))));
-                }}
-                placeholder="auto o 60"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+          )
+        }
+      ]}
+    />
   );
 };
 

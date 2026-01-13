@@ -29,12 +29,39 @@ export const BackgroundImageContainer = ({
   gridAlignItems = 'stretch',
   // Fondo transparente
   transparentBackground = false,
+  backgroundColor,
   children,
 }) => {
-  const { connectors: { connect, drag }, actions: { setProp }, selected } = useNode((node) => ({
+  const { id, connectors: { connect, drag }, actions: { setProp }, selected } = useNode((node) => ({
     selected: node.events.selected,
   }));
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { enabled, actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor((state) => ({ enabled: state.options.enabled }));
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   const textAlign = align === 'center' ? 'center' : (align === 'flex-end' ? 'right' : 'left');
 
@@ -60,7 +87,8 @@ export const BackgroundImageContainer = ({
     position: 'relative',
     padding: `${Math.max(5, padding)}px`,
   // Nota: `minHeight` ya aplicado arriba como `effectiveMinHeight`.
-    backgroundImage: transparentBackground ? 'none' : `url(${backgroundImage})`,
+    backgroundColor: backgroundColor || 'transparent',
+    backgroundImage: (transparentBackground || !backgroundImage) ? 'none' : `url(${backgroundImage})`,
     backgroundSize: backgroundSize || 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -91,37 +119,106 @@ export const BackgroundImageContainer = ({
 
   return (
     <div
-      ref={(ref) => connect(drag(ref))}
+      ref={(ref) => {
+        if (!ref) return;
+        if (id === 'ROOT') connect(ref);
+        else connect(drag(ref));
+      }}
       style={{
         ...baseStyle,
         ...layoutStyle,
+        width: id === 'ROOT' ? '1280px' : baseStyle.width,
+        minHeight: id === 'ROOT' ? '720px' : baseStyle.minHeight,
       }}
     >
-      {enabled && (
+      {selected && id !== 'ROOT' && (
+        <div 
+            className="position-absolute d-flex align-items-center px-3 rounded-top shadow-sm"
+            style={{
+                top: 0,
+                left: 0,
+                transform: 'translateY(-100%)',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                zIndex: 9999,
+                height: '42px',
+                gap: '16px',
+            }}
+         >
+             {/* Move */}
+             <i 
+                className="bi bi-arrows-move" 
+                title="Mover"
+                style={{ cursor: 'move', fontSize: '1.4rem' }}
+                ref={(ref) => ref && drag(ref)}
+             />
+
+             {/* Duplicate */}
+             <i 
+                className="bi bi-copy"
+                title="Duplicar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const current = node(id).get();
+                  const { type, props, parent } = {
+                    type: current.data.type,
+                    props: current.data.props,
+                    parent: current.data.parent,
+                  };
+                  const parentNode = node(parent).get();
+                  const siblings = parentNode.data.nodes || [];
+                  const index = Math.max(0, siblings.indexOf(id));
+                  const shiftedProps = {
+                    ...props,
+                    translateX: (Number(props.translateX) || 0) + 10,
+                    translateY: (Number(props.translateY) || 0) + 10,
+                  };
+                  const newNode = createNode(React.createElement(type, shiftedProps));
+                  add(newNode, parent, index + 1);
+                  selectNode(newNode.id);
+                }}
+             />
+
+             {/* Delete */}
+             <i 
+                className="bi bi-trash" 
+                title="Eliminar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    deleteNode(id);
+                }}
+             />
+         </div>
+      )}
+      {enabled && id !== 'ROOT' && (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           {/* Borde superior */}
           <div
-            ref={(ref) => ref && connect(drag(ref))}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 10, cursor: 'pointer', pointerEvents: 'auto' }}
-            aria-label="Seleccionar contenedor (borde superior)"
+            ref={(ref) => ref && drag(ref)}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 10, cursor: 'move', pointerEvents: 'auto' }}
+            aria-label="Mover contenedor (borde superior)"
           />
           {/* Borde inferior */}
           <div
-            ref={(ref) => ref && connect(drag(ref))}
-            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 10, cursor: 'pointer', pointerEvents: 'auto' }}
-            aria-label="Seleccionar contenedor (borde inferior)"
+            ref={(ref) => ref && drag(ref)}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 10, cursor: 'move', pointerEvents: 'auto' }}
+            aria-label="Mover contenedor (borde inferior)"
           />
           {/* Borde izquierdo */}
           <div
-            ref={(ref) => ref && connect(drag(ref))}
-            style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 10, cursor: 'pointer', pointerEvents: 'auto' }}
-            aria-label="Seleccionar contenedor (borde izquierdo)"
+            ref={(ref) => ref && drag(ref)}
+            style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 10, cursor: 'move', pointerEvents: 'auto' }}
+            aria-label="Mover contenedor (borde izquierdo)"
           />
           {/* Borde derecho */}
           <div
-            ref={(ref) => ref && connect(drag(ref))}
-            style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 10, cursor: 'pointer', pointerEvents: 'auto' }}
-            aria-label="Seleccionar contenedor (borde derecho)"
+            ref={(ref) => ref && drag(ref)}
+            style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 10, cursor: 'move', pointerEvents: 'auto' }}
+            aria-label="Mover contenedor (borde derecho)"
           />
         </div>
       )}
@@ -141,276 +238,237 @@ export function BackgroundImageContainerSettings() {
   const { upload, isUploading } = useUploadImage("Assets");
 
   return (
-    <div className="d-grid gap-3">
-      <div>
-        <label className="form-label">Tamaño de la imagen</label>
-        <select
-          className="form-select form-select-sm"
-          value={props.backgroundSize || 'cover'}
-          onChange={(e) => setProp((p) => (p.backgroundSize = e.target.value))}
-        >
-          <option value="cover">Cubrir (cover)</option>
-          <option value="contain">Ajustar (contain)</option>
-          <option value="auto">Auto</option>
-          <option value="100% 100%">Estirar (100% 100%)</option>
-        </select>
-        <div className="small text-muted">Controla CSS background-size.</div>
-      </div>
-      <div>
-        <label className="form-label">Opacidad</label>
-        <input
-          type="range"
-          className="form-range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={Number.isFinite(props.opacity) ? props.opacity : 1}
-          onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
-        />
-        <div className="small text-muted">{(props.opacity ?? 1).toFixed(2)}</div>
-      </div>
-      <div>
-        <label className="form-label">Z-index</label>
-        <input
-          type="number"
-          className="form-control form-control-sm"
-          value={Number.isFinite(props.zIndex) ? props.zIndex : 0}
-          onChange={(e) => setProp((p) => (p.zIndex = Number(e.target.value)))}
-        />
-      </div>
-      <div>
-        <label className="form-label">Margen (px)</label>
-        <input
-          type="range"
-          className="form-range"
-          min={0}
-          max={64}
-          step={1}
-          value={typeof props.margin === 'number' ? props.margin : 0}
-          onChange={(e) => setProp((p) => (p.margin = Number(e.target.value)))}
-        />
-        <div className="small text-muted">{props.margin ?? 0}px</div>
-      </div>
-      <div className="row g-2">
-        <div className="col-6">
-          <label className="form-label">Mover X (px)</label>
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            value={Number.isFinite(props.translateX) ? props.translateX : 0}
-            onChange={(e) => setProp((p) => (p.translateX = Number(e.target.value)))}
-          />
-        </div>
-        <div className="col-6">
-          <label className="form-label">Mover Y (px)</label>
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            value={Number.isFinite(props.translateY) ? props.translateY : 0}
-            onChange={(e) => setProp((p) => (p.translateY = Number(e.target.value)))}
-          />
-        </div>
-      </div>
-      <div className="form-check">
-        <input
-          id="bgimg-transparent"
-          type="checkbox"
-          className="form-check-input"
-          checked={!!props.transparentBackground}
-          onChange={(e) => setProp((p) => (p.transparentBackground = e.target.checked))}
-        />
-        <label className="form-check-label" htmlFor="bgimg-transparent">
-          Fondo transparente
-        </label>
-      </div>
+    <SettingsTabs
+      tabs={[
+        {
+          label: "Contenido",
+          content: (
+            <div className="d-grid gap-3">
+              <div>
+                <label className="form-label">Color de Fondo</label>
+                <div className="d-flex gap-2">
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={props.backgroundColor || '#ffffff'}
+                    onChange={(e) => setProp((props) => (props.backgroundColor = e.target.value))}
+                    title="Elige un color"
+                  />
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    value={props.backgroundColor || ''}
+                    onChange={(e) => setProp((props) => (props.backgroundColor = e.target.value))}
+                    placeholder="#ffffff"
+                  />
+                </div>
+              </div>
 
-      <div>
-        <label className="form-label">URL de la imagen de fondo</label>
-        <input
-          className="form-control form-control-sm"
-          type="text"
-          value={props.backgroundImage ?? ''}
-          onChange={(e) => setProp((props) => (props.backgroundImage = e.target.value))}
-          placeholder="https://..."
-          disabled={!!props.transparentBackground}
-        />
-      </div>
+              <div>
+                <label className="form-label">URL imagen fondo</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="text"
+                  value={props.backgroundImage ?? ''}
+                  onChange={(e) => setProp((props) => (props.backgroundImage = e.target.value))}
+                  placeholder="https://..."
+                  disabled={!!props.transparentBackground}
+                />
+              </div>
 
-      <div>
-        <input
-          className="form-control form-control-sm"
-          type="file"
-          accept='image/*'
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const url = await upload(file);
-            if (url) setProp((p) => (p.backgroundImage = url));
-          }}
-          disabled={isUploading || !!props.transparentBackground}
-        />
-        {isUploading && <div className="text-info small mt-1">Subiendo imagen...</div>}
-      </div>
+              <div>
+                <input
+                  className="form-control form-control-sm"
+                  type="file"
+                  accept='image/*'
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const url = await upload(file);
+                    if (url) {
+                        setProp((p) => (p.backgroundImage = url));
+                        // Limpiar input para permitir re-subir
+                        e.target.value = null;
+                    }
+                  }}
+                  disabled={isUploading || !!props.transparentBackground}
+                />
+                {isUploading && <div className="text-info small mt-1">Subiendo imagen...</div>}
+              </div>
 
-      <div>
-        <label className="form-label">Relleno (Padding)</label>
-        <input
-          type="range"
-          className="form-range"
-          min={5}
-          max={100}
-          step={1}
-          value={props.padding != null ? Math.max(5, props.padding) : 40}
-          onChange={(e) => setProp((props) => (props.padding = Number(e.target.value)))}
-        />
-        <div className="small text-muted">{Math.max(5, props.padding ?? 40)}px</div>
-      </div>
+              <div className="form-check">
+                <input
+                  id="bgimg-transparent"
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={!!props.transparentBackground}
+                  onChange={(e) => setProp((p) => (p.transparentBackground = e.target.checked))}
+                />
+                <label className="form-check-label" htmlFor="bgimg-transparent">
+                  Fondo transparente
+                </label>
+              </div>
+            </div>
+          )
+        },
+        {
+          label: "Diseño",
+          content: (
+            <div className="d-grid gap-3">
+              <div>
+                <label className="form-label">Tamaño imagen</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={props.backgroundSize || 'cover'}
+                  onChange={(e) => setProp((p) => (p.backgroundSize = e.target.value))}
+                >
+                  <option value="cover">Cubrir (cover)</option>
+                  <option value="contain">Ajustar (contain)</option>
+                  <option value="auto">Auto</option>
+                  <option value="100% 100%">Estirar</option>
+                </select>
+              </div>
 
-      <div>
-        <label className="form-label">Altura Mínima</label>
-        <input
-          type="range"
-          className="form-range"
-          min={50}
-          max={500}
-          step={10}
-          value={props.minHeight ?? 200}
-          onChange={(e) => setProp((props) => (props.minHeight = Number(e.target.value)))}
-        />
-        <div className="small text-muted">{props.minHeight ?? 200}px</div>
-      </div>
+              <div>
+                <label className="form-label">Opacidad</label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={Number.isFinite(props.opacity) ? props.opacity : 1}
+                  onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
+                />
+                <div className="small text-muted">{(props.opacity ?? 1).toFixed(2)}</div>
+              </div>
 
-      {/* Controles de layout (igual que Container) */}
-      <div>
-        <label className="form-label">Distribución</label>
-        <select
-          className="form-select form-select-sm"
-          value={props.layout || 'flex'}
-          onChange={(e) => setProp((p) => (p.layout = e.target.value))}
-        >
-          <option value="flex">Flex</option>
-          <option value="grid">Grid</option>
-        </select>
-      </div>
+              <div>
+                <label className="form-label">Margin (px)</label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min={0}
+                  max={64}
+                  step={1}
+                  value={typeof props.margin === 'number' ? props.margin : 0}
+                  onChange={(e) => setProp((p) => (p.margin = Number(e.target.value)))}
+                />
+              </div>
 
-      {(props.layout || 'flex') === 'flex' && (
-        <>
-          <div>
-            <label className="form-label">Dirección</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.direction || 'column'}
-              onChange={(e) => setProp((p) => (p.direction = e.target.value))}
-            >
-              <option value="row">Fila</option>
-              <option value="column">Columna</option>
-            </select>
-          </div>
-          <div>
-            <label className="form-label">Alineación (eje cruzado)</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.align || 'flex-start'}
-              onChange={(e) => setProp((p) => (p.align = e.target.value))}
-            >
-              <option value="flex-start">Inicio</option>
-              <option value="center">Centro</option>
-              <option value="flex-end">Fin</option>
-              <option value="stretch">Stretch</option>
-            </select>
-          </div>
-          <div>
-            <label className="form-label">Justificación (eje principal)</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.justify || 'flex-start'}
-              onChange={(e) => setProp((p) => (p.justify = e.target.value))}
-            >
-              <option value="flex-start">Inicio</option>
-              <option value="center">Centro</option>
-              <option value="flex-end">Fin</option>
-              <option value="space-between">Espacio entre</option>
-              <option value="space-around">Espacio alrededor</option>
-              <option value="space-evenly">Espacio uniforme</option>
-            </select>
-          </div>
-          <div>
-            <label className="form-label">Wrap</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.wrap || 'nowrap'}
-              onChange={(e) => setProp((p) => (p.wrap = e.target.value))}
-            >
-              <option value="nowrap">No wrap</option>
-              <option value="wrap">Wrap</option>
-              <option value="wrap-reverse">Wrap reverse</option>
-            </select>
-          </div>
-        </>
-      )}
+              <div>
+                <label className="form-label">Padding (px)</label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min={5}
+                  max={100}
+                  step={1}
+                  value={props.padding != null ? Math.max(5, props.padding) : 40}
+                  onChange={(e) => setProp((props) => (props.padding = Number(e.target.value)))}
+                />
+              </div>
 
-      {(props.layout || 'flex') === 'grid' && (
-        <>
-          <div>
-            <label className="form-label">Columnas</label>
-            <input
-              type="range"
-              className="form-range"
-              min={1}
-              max={6}
-              step={1}
-              value={typeof props.gridColumns === 'number' ? props.gridColumns : 2}
-              onChange={(e) => setProp((p) => (p.gridColumns = Number(e.target.value)))}
-            />
-            <div className="small text-muted">{props.gridColumns ?? 2} columnas</div>
-          </div>
-          <div>
-            <label className="form-label">Alineación horizontal (celdas)</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.gridJustifyItems || 'stretch'}
-              onChange={(e) => setProp((p) => (p.gridJustifyItems = e.target.value))}
-            >
-              <option value="start">Inicio</option>
-              <option value="center">Centro</option>
-              <option value="end">Fin</option>
-              <option value="stretch">Stretch</option>
-            </select>
-          </div>
-          <div>
-            <label className="form-label">Alineación vertical (celdas)</label>
-            <select
-              className="form-select form-select-sm"
-              value={props.gridAlignItems || 'stretch'}
-              onChange={(e) => setProp((p) => (p.gridAlignItems = e.target.value))}
-            >
-              <option value="start">Inicio</option>
-              <option value="center">Centro</option>
-              <option value="end">Fin</option>
-              <option value="stretch">Stretch</option>
-            </select>
-          </div>
-        </>
-      )}
+              <div>
+                <label className="form-label">Altura (min px)</label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min={50}
+                  max={500}
+                  step={10}
+                  value={props.minHeight ?? 200}
+                  onChange={(e) => setProp((props) => (props.minHeight = Number(e.target.value)))}
+                />
+              </div>
+              
+              <div>
+                <label className="form-label">Distribución</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={props.layout || 'flex'}
+                  onChange={(e) => setProp((p) => (p.layout = e.target.value))}
+                >
+                  <option value="flex">Flex</option>
+                  <option value="grid">Grid</option>
+                </select>
+              </div>
 
-      <div>
-        <label className="form-label">Espacio entre elementos (gap)</label>
-        <input
-          type="range"
-          className="form-range"
-          min={0}
-          max={48}
-          step={1}
-          value={typeof props.gap === 'number' ? props.gap : 8}
-          onChange={(e) => setProp((p) => (p.gap = Number(e.target.value)))}
-        />
-        <div className="small text-muted">{props.gap ?? 8}px</div>
-      </div>
-    </div>
+              {(props.layout || 'flex') === 'flex' && (
+                <>
+                  <div>
+                    <label className="form-label">Dirección</label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={props.direction || 'column'}
+                      onChange={(e) => setProp((p) => (p.direction = e.target.value))}
+                    >
+                      <option value="column">Columna</option>
+                      <option value="row">Fila</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Alineación</label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={props.align || 'flex-start'}
+                      onChange={(e) => setProp((p) => (p.align = e.target.value))}
+                    >
+                      <option value="flex-start">Inicio</option>
+                      <option value="center">Centro</option>
+                      <option value="flex-end">Final</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        },
+        {
+          label: "Avanzado",
+          content: (
+            <div className="d-grid gap-3">
+              <div className="row g-2">
+                <div className="col-6">
+                  <label className="form-label">Mover X</label>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    value={Number.isFinite(props.translateX) ? props.translateX : 0}
+                    onChange={(e) => setProp((p) => (p.translateX = Number(e.target.value)))}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label">Mover Y</label>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    value={Number.isFinite(props.translateY) ? props.translateY : 0}
+                    onChange={(e) => setProp((p) => (p.translateY = Number(e.target.value)))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Z-index</label>
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
+                  value={Number.isFinite(props.zIndex) ? props.zIndex : 0}
+                  onChange={(e) => setProp((p) => (p.zIndex = Number(e.target.value)))}
+                />
+              </div>
+            </div>
+          )
+        }
+      ]}
+    />
   );
 }
 
+
 BackgroundImageContainer.craft = {
+  displayName: 'Lienzo',
   props: {
     backgroundImage: '',
     backgroundSize: 'cover',

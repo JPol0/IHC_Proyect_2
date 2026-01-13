@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useNavigate } from 'react-router-dom';
+import { SettingsTabs } from "../ui/SettingsTabs";
 
 export const ChevronButton = ({
   to,
@@ -29,7 +30,7 @@ export const ChevronButton = ({
   } = useNode((node) => ({
     selected: node.events.selected,
   }));
-  const { actions: { add, selectNode }, query: { createNode, node } } = useEditor();
+  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor();
   const navigate = useNavigate();
 
   const handleClick = (e) => {
@@ -53,33 +54,30 @@ export const ChevronButton = ({
     navigate(target);
   };
 
-  // Handle de movimiento (misma estructura que Card, actualizando translateX/Y)
-  const moveStart = useRef({ mx: 0, my: 0, x: Number(translateX) || 0, y: Number(translateY) || 0 });
-  const onMoveMouseDown = (e) => {
+  const handleMouseDown = (e) => {
     e.stopPropagation();
-    moveStart.current = {
-      mx: e.clientX,
-      my: e.clientY,
-      x: Number(translateX) || 0,
-      y: Number(translateY) || 0,
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
     };
 
-    const onMove = (ev) => {
-      const dx = ev.clientX - moveStart.current.mx;
-      const dy = ev.clientY - moveStart.current.my;
-      setProp((p) => {
-        p.translateX = Math.round((moveStart.current.x ?? 0) + dx);
-        p.translateY = Math.round((moveStart.current.y ?? 0) + dy);
-      }, 0);
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
     };
 
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   };
 
   const rotation =
@@ -136,68 +134,67 @@ export const ChevronButton = ({
       </svg>
 
       {selected && (
-        <>
-          {/* Handle de movimiento */}
-          <div
-            onMouseDown={onMoveMouseDown}
-            title="Arrastra para mover"
+        <div 
+            className="position-absolute d-flex align-items-center px-3 rounded-top shadow-sm"
             style={{
-              position: 'absolute',
-              left: 4,
-              top: 4,
-              width: 14,
-              height: 14,
-              borderRadius: 3,
-              cursor: 'move',
-              boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
-              background: 'rgba(0,0,0,0.15)',
+                top: 0,
+                left: 0,
+                transform: 'translateY(-100%)',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                zIndex: 9999,
+                height: '42px',
+                gap: '16px',
             }}
-          />
-          {/* Botón duplicar */}
-          <span
-            role="button"
-            aria-label="Duplicar"
-            className="position-absolute"
-            style={{
-              top: -14,
-              right: -14,
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              backgroundColor: '#590004',
-              color: '#fff',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 8px #590004, 0 0 12px #590004',
-              cursor: 'pointer',
-              zIndex: 9999,
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const current = node(id).get();
-              const { type, props, parent } = {
-                type: current.data.type,
-                props: current.data.props,
-                parent: current.data.parent,
-              };
-              const parentNode = node(parent).get();
-              const siblings = parentNode.data.nodes || [];
-              const index = Math.max(0, siblings.indexOf(id));
-              const shiftedProps = {
-                ...props,
-                translateX: (Number(props.translateX) || 0) + 10,
-                translateY: (Number(props.translateY) || 0) + 10,
-              };
-              const newNode = createNode(React.createElement(type, shiftedProps));
-              add(newNode, parent, index + 1);
-              selectNode(newNode.id);
-            }}
-          >
-            <i className="bi bi-copy" />
-          </span>
-        </>
+         >
+             {/* Move */}
+             <i 
+                className="bi bi-arrows-move" 
+                title="Mover"
+                style={{ cursor: 'move', fontSize: '1.4rem' }}
+                onMouseDown={handleMouseDown}
+             />
+
+             {/* Duplicate */}
+             <i 
+                className="bi bi-copy"
+                title="Duplicar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const current = node(id).get();
+                  const { type, props, parent } = {
+                    type: current.data.type,
+                    props: current.data.props,
+                    parent: current.data.parent,
+                  };
+                  const parentNode = node(parent).get();
+                  const siblings = parentNode.data.nodes || [];
+                  const index = Math.max(0, siblings.indexOf(id));
+                  const shiftedProps = {
+                    ...props,
+                    translateX: (Number(props.translateX) || 0) + 10,
+                    translateY: (Number(props.translateY) || 0) + 10,
+                  };
+                  const newNode = createNode(React.createElement(type, shiftedProps));
+                  add(newNode, parent, index + 1);
+                  selectNode(newNode.id);
+                }}
+             />
+
+             {/* Delete */}
+             <i 
+                className="bi bi-trash" 
+                title="Eliminar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    deleteNode(id);
+                }}
+             />
+         </div>
       )}
     </button>
   );
@@ -210,133 +207,167 @@ const ChevronButtonSettings = () => {
   } = useNode((node) => ({ props: node.data.props }));
 
   return (
-    <div className="d-grid gap-3">
-      <div>
-        <label className="form-label">Opacidad</label>
-        <input
-          className="form-range"
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={Number.isFinite(props.opacity) ? props.opacity : 1}
-          onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
-        />
-        <div className="small text-muted">{(props.opacity ?? 1).toFixed(2)}</div>
-      </div>
-      <div>
-        <label className="form-label">Z-index</label>
-        <input
-          className="form-control form-control-sm"
-          type="number"
-          value={Number.isFinite(props.zIndex) ? props.zIndex : 0}
-          onChange={(e) => setProp((p) => (p.zIndex = Number(e.target.value)))}
-        />
-      </div>
-      <div className="row g-2">
-        <div className="col-6">
-          <label className="form-label">Mover X (px)</label>
-          <input
-            className="form-control form-control-sm"
-            type="number"
-            value={Number.isFinite(props.translateX) ? props.translateX : 0}
-            onChange={(e) => setProp((p) => (p.translateX = Number(e.target.value)))}
-          />
-        </div>
-        <div className="col-6">
-          <label className="form-label">Mover Y (px)</label>
-          <input
-            className="form-control form-control-sm"
-            type="number"
-            value={Number.isFinite(props.translateY) ? props.translateY : 0}
-            onChange={(e) => setProp((p) => (p.translateY = Number(e.target.value)))}
-          />
-        </div>
-      </div>
-      <div>
-        <label className="form-label">Nombre de sección</label>
-        <input
-          className="form-control form-control-sm"
-          type="text"
-          value={props.sectionName ?? ''}
-          onChange={(e) => setProp((p) => (p.sectionName = e.target.value))}
-          placeholder="Landing"
-        />
-      </div>
-      <div>
-        <label className="form-label">Dirección</label>
-        <select
-          className="form-select form-select-sm"
-          value={props.direction || 'left'}
-          onChange={(e) => setProp((p) => (p.direction = e.target.value))}
-        >
-          <option value="left">Izquierda</option>
-          <option value="right">Derecha</option>
-          <option value="up">Arriba</option>
-          <option value="down">Abajo</option>
-        </select>
-      </div>
-      <div className="row g-2">
-        <div className="col-6">
-          <label className="form-label">Tamaño (px)</label>
-          <input
-            className="form-control form-control-sm"
-            type="number"
-            min={24}
-            max={128}
-            value={Number.isFinite(props.size) ? props.size : 56}
-            onChange={(e) => setProp((p) => (p.size = Number(e.target.value)))}
-          />
-        </div>
-        <div className="col-6">
-          <label className="form-label">Grosor</label>
-          <input
-            className="form-control form-control-sm"
-            type="number"
-            min={2}
-            max={16}
-            value={Number.isFinite(props.stroke) ? props.stroke : 8}
-            onChange={(e) => setProp((p) => (p.stroke = Number(e.target.value)))}
-          />
-        </div>
-      </div>
-      <div className="row g-2">
-        <div className="col-6">
-          <label className="form-label">Color</label>
-          <input
-            type="color"
-            className="form-control form-control-color"
-            value={props.color || '#E6E3A1'}
-            onChange={(e) => setProp((p) => (p.color = e.target.value))}
-          />
-        </div>
-        <div className="col-6">
-          <label className="form-label">Fondo</label>
-          <input
-            type="color"
-            className="form-control form-control-color"
-            value={props.bg || '#00000000'}
-            onChange={(e) => setProp((p) => (p.bg = e.target.value))}
-          />
-        </div>
-      </div>
-      <div className="form-check">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id="chev-rounded"
-          checked={!!props.rounded}
-          onChange={(e) => setProp((p) => (p.rounded = e.target.checked))}
-        />
-        <label className="form-check-label" htmlFor="chev-rounded">
-          Bordes redondeados
-        </label>
-      </div>
-    </div>
+    <SettingsTabs
+      tabs={[
+        {
+          label: "Diseño",
+          content: (
+            <div className="d-grid gap-3">
+              <div>
+                <label className="form-label">Dirección</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={props.direction || 'left'}
+                  onChange={(e) => setProp((p) => (p.direction = e.target.value))}
+                >
+                  <option value="left">Izquierda</option>
+                  <option value="right">Derecha</option>
+                  <option value="up">Arriba</option>
+                  <option value="down">Abajo</option>
+                </select>
+              </div>
+              <div className="row g-2">
+                <div className="col-6">
+                  <label className="form-label">Tamaño (px)</label>
+                  <input
+                    className="form-control form-control-sm"
+                    type="number"
+                    min={24}
+                    max={128}
+                    value={Number.isFinite(props.size) ? props.size : 56}
+                    onChange={(e) => setProp((p) => (p.size = Number(e.target.value)))}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label">Grosor</label>
+                  <input
+                    className="form-control form-control-sm"
+                    type="number"
+                    min={2}
+                    max={16}
+                    value={Number.isFinite(props.stroke) ? props.stroke : 8}
+                    onChange={(e) => setProp((p) => (p.stroke = Number(e.target.value)))}
+                  />
+                </div>
+              </div>
+              <div className="row g-2">
+                <div className="col-6">
+                  <label className="form-label">Color Icono</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={props.color || '#E6E3A1'}
+                    onChange={(e) => setProp((p) => (p.color = e.target.value))}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label">Fondo</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={props.bg || '#00000000'}
+                    onChange={(e) => setProp((p) => (p.bg = e.target.value))}
+                  />
+                </div>
+              </div>
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="chev-rounded"
+                  checked={!!props.rounded}
+                  onChange={(e) => setProp((p) => (p.rounded = e.target.checked))}
+                />
+                <label className="form-check-label" htmlFor="chev-rounded">
+                  Bordes redondeados
+                </label>
+              </div>
+            </div>
+          )
+        },
+        {
+          label: "Acción",
+          content: (
+            <div className="d-grid gap-3">
+               <div>
+                <label className="form-label">Ir a sección (Nombre)</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="text"
+                  value={props.sectionName ?? ''}
+                  onChange={(e) => setProp((p) => (p.sectionName = e.target.value))}
+                  placeholder="Ej: Landing"
+                />
+              </div>
+               <div>
+                <label className="form-label">O ir a ruta interna</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="text"
+                  value={props.to ?? ''}
+                  onChange={(e) => setProp((p) => (p.to = e.target.value))}
+                  placeholder="/blog"
+                />
+              </div>
+            </div>
+          )
+        },
+        {
+          label: "Avanzado",
+          content: (
+            <div className="d-grid gap-3">
+              <div className="row g-2">
+                <div className="col-6">
+                  <label className="form-label">Mover X</label>
+                  <input
+                    className="form-control form-control-sm"
+                    type="number"
+                    value={Number.isFinite(props.translateX) ? props.translateX : 0}
+                    onChange={(e) => setProp((p) => (p.translateX = Number(e.target.value)))}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label">Mover Y</label>
+                  <input
+                    className="form-control form-control-sm"
+                    type="number"
+                    value={Number.isFinite(props.translateY) ? props.translateY : 0}
+                    onChange={(e) => setProp((p) => (p.translateY = Number(e.target.value)))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Z-index</label>
+                <input
+                  className="form-control form-control-sm"
+                  type="number"
+                  value={Number.isFinite(props.zIndex) ? props.zIndex : 0}
+                  onChange={(e) => setProp((p) => (p.zIndex = Number(e.target.value)))}
+                />
+              </div>
+              <div>
+                <label className="form-label">Opacidad</label>
+                <input
+                  className="form-range"
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={Number.isFinite(props.opacity) ? props.opacity : 1}
+                  onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
+                />
+                <div className="small text-muted">{(props.opacity ?? 1).toFixed(2)}</div>
+              </div>
+            </div>
+          )
+        }
+      ]}
+    />
   );
 };
 
 ChevronButton.craft = {
+  displayName: 'Botón Flecha',
   props: {
     to: '',
     sectionName: '',

@@ -30,7 +30,13 @@ function SectionDataLoader({ sectionName, siteId }) {
     ROOT: {
       type: { resolvedName: 'BackgroundImageContainer' },
       isCanvas: true,
-      props: { padding: 0, background: '#f5f5f5' },
+      props: { 
+        padding: 0, 
+        backgroundColor: '#ffffff',
+        backgroundImage: '', 
+        targetWidth: 1280,
+        targetHeight: 720
+      },
       displayName: 'BackgroundImageContainer',
       custom: {},
       hidden: false,

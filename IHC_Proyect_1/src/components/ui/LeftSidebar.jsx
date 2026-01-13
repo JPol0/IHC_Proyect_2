@@ -46,7 +46,7 @@ export default function LeftSidebar() {
             <div 
                 className={`mb-4 cursor-pointer ${activeTab === 'components' ? 'text-white' : 'text-secondary'}`}
                 onClick={() => setActiveTab('components')}
-                title="Components"
+                title="Componentes"
                 style={{ cursor: 'pointer' }}
             >
                 <i className="bi bi-grid-fill fs-5"></i>
@@ -56,7 +56,7 @@ export default function LeftSidebar() {
             <div 
                 className={`mb-4 cursor-pointer ${activeTab === 'pages' ? 'text-white' : 'text-secondary'}`}
                 onClick={() => setActiveTab('pages')}
-                title="Pages / Sections"
+                title="Páginas"
                 style={{ cursor: 'pointer' }}
             >
                 <i className="bi bi-file-earmark fs-5"></i>
@@ -66,7 +66,7 @@ export default function LeftSidebar() {
             <div 
                 className={`mb-4 cursor-pointer ${activeTab === 'layers' ? 'text-white' : 'text-secondary'}`}
                 onClick={() => setActiveTab('layers')}
-                title="Layers"
+                title="Capas"
                 style={{ cursor: 'pointer' }}
             >
                 <i className="bi bi-layers fs-5"></i>
@@ -81,25 +81,25 @@ export default function LeftSidebar() {
             {activeTab === 'components' && (
                 <div className="p-3 h-100 overflow-auto">
                     <div className="mb-3">
-                        <input type="text" className="form-control form-control-sm border-0 shadow-sm" placeholder="Search components..." />
+                        <input type="text" className="form-control form-control-sm border-0 shadow-sm" placeholder="Buscar componentes..." />
                     </div>
-                    <h6 className="fw-bold fs-7 text-uppercase text-muted mb-3 small" style={{ letterSpacing: '0.5px' }}>Components</h6>
+                    <h6 className="fw-bold fs-7 text-uppercase text-muted mb-3 small" style={{ letterSpacing: '0.5px' }}>Componentes</h6>
                     
                     <div className="row g-2 pb-5">
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Text text="Texto" fontSize={18} />)} icon="bi-type" label="Text Block" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Button size="small" variant="contained">Botón</Button>)} icon="bi-hand-index-thumb" label="Button" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Image />)} icon="bi-image" label="Image" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#ffffff" canvas />)} icon="bi-square" label="Container" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Card} />)} icon="bi-card-heading" label="Card" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <IconButton iconName="star" iconSize={24} />)} icon="bi-star" label="Icon" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <ChevronButton direction="left" color="#E6E3A1" />)} icon="bi-chevron-bar-left" label="Nav Btn" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={BackgroundImageContainer} padding={16} background="#ffffff" canvas />)} icon="bi-card-image" label="Img Box" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <FileDownload />)} icon="bi-download" label="Download" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <ForumButton />)} icon="bi-chat-left-text" label="Forum" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <LikeButton />)} icon="bi-heart" label="Like" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Text text="Texto" fontSize={18} />)} icon="bi-type" label="Texto" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Button size="small" variant="contained">Botón</Button>)} icon="bi-hand-index-thumb" label="Botón" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Image />)} icon="bi-image" label="Imagen" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#ffffff" canvas />)} icon="bi-square" label="Contenedor" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Card} />)} icon="bi-card-heading" label="Tarjeta" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <IconButton iconName="star" iconSize={24} />)} icon="bi-star" label="Ícono" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <ChevronButton direction="left" color="#E6E3A1" />)} icon="bi-chevron-bar-left" label="Botón Nav" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={BackgroundImageContainer} padding={16} background="#ffffff" canvas />)} icon="bi-card-image" label="Caja Img" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <FileDownload />)} icon="bi-download" label="Descarga" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <ForumButton />)} icon="bi-chat-left-text" label="Foro" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <LikeButton />)} icon="bi-heart" label="Me Gusta" />
                        
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>)} icon="bi-layout-sidebar" label="Columns" />
-                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Navbar />)} icon="bi-menu-button-wide" label="Navbar" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>)} icon="bi-layout-sidebar" label="Columnas" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Navbar />)} icon="bi-menu-button-wide" label="Barra Nav" />
                     </div>
                 </div>
             )}
@@ -113,7 +113,7 @@ export default function LeftSidebar() {
 
             {activeTab === 'layers' && (
                 <div className="p-3 h-100 overflow-auto">
-                    <h6 className="fw-bold fs-7 text-uppercase text-muted mb-3 small" style={{ letterSpacing: '0.5px' }}>Layers</h6>
+                    <h6 className="fw-bold fs-7 text-uppercase text-muted mb-3 small" style={{ letterSpacing: '0.5px' }}>Capas</h6>
                     <div className="layers-container">
                         <Layers expandRootOnLoad={true} />
                     </div>

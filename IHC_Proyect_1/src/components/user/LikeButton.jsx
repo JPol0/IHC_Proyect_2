@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNode } from '@craftjs/core';
 import { supabase } from '../../../SupabaseCredentials';
+import { SettingsTabs } from "../ui/SettingsTabs";
 
 // Función para formatear números al estilo 1K, 1M
 const formatCount = (num) => {
@@ -149,19 +150,28 @@ const LikeButtonSettings = () => {
   }));
 
   return (
-    <div className="p-3">
-      <div className="mb-3">
-        <label className="form-label small fw-semibold">ID de Sección</label>
-        <input
-          type="text"
-          className="form-control form-control-sm"
-          value={sectionId}
-          onChange={(e) => setProp((props) => (props.sectionId = e.target.value))}
-          placeholder="Ej: seccion-1, blog-post-123"
-        />
-        <small className="text-muted">Identificador único para rastrear los likes de esta sección</small>
-      </div>
-    </div>
+    <SettingsTabs
+      tabs={[
+        {
+          label: "Configuración",
+          content: (
+            <div className="mb-3">
+              <label className="form-label small fw-semibold">ID de Sección</label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                value={sectionId}
+                onChange={(e) => setProp((props) => (props.sectionId = e.target.value))}
+                placeholder="Ej: seccion-1, blog-post-123"
+              />
+              <small className="text-muted d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                Identificador único para rastrear los likes de esta sección
+              </small>
+            </div>
+          )
+        }
+      ]}
+    />
   );
 };
 
