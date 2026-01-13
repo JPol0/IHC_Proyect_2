@@ -235,7 +235,7 @@ const Sidebar = ({ items = [] }) => {
   });
 
   return (
-    <aside className="w-64" style={{ overflowX: 'hidden', overflowY: 'auto', minWidth: '256px', padding: '16px', paddingRight: '20px' }}>
+    <aside className="w-100 h-100" style={{ overflowX: 'hidden', overflowY: 'auto', padding: '16px', paddingRight: '20px' }}>
       <div className="d-flex justify-content-start mb-3">
         <div className="text-center w-100" style={{ overflowX: 'hidden', paddingRight: '12px' }}>
           <div className="d-flex align-items-center justify-content-between mb-2">
@@ -251,7 +251,7 @@ const Sidebar = ({ items = [] }) => {
           </div>
 
           {/* Form para crear una nueva sección */}
-          <form className="d-flex gap-2 mb-2" onSubmit={handleCreate}>
+          <form className="d-flex gap-2 mb-3" onSubmit={handleCreate}>
             <input
               type="text"
               className="form-control form-control-sm"
@@ -265,15 +265,6 @@ const Sidebar = ({ items = [] }) => {
               {creating ? 'Creando…' : 'Crear'}
             </button>
           </form>
-
-          {/* Botón para crear carpeta */}
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary w-100 mb-2"
-            onClick={handleCreateFolder}
-          >
-            <i className="bi bi-folder-plus me-1"></i> Nueva Carpeta
-          </button>
 
           {/* Buscador de secciones */}
           <input
@@ -295,27 +286,9 @@ const Sidebar = ({ items = [] }) => {
             <div className="text-muted small">No hay secciones.</div>
           )}
 
-          {/* Área de raíz para soltar secciones */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); }}
-            onDrop={handleDropRoot}
-            onContextMenu={(e) => handleContextMenu(e, null)}
-           style={{
-             minHeight: '40px',
-             padding: '12px',
-             paddingRight: '16px',
-             border: draggedOverFolder === null && draggedSection ? '2px dashed #0d6efd' : 'none',
-             borderRadius: '4px',
-             marginBottom: '8px',
-             overflowX: 'hidden',
-           }}
-          >
-            {folders.length > 0 && (
-              <small className="text-muted d-block mb-2">Raíz</small>
-            )}
-
-            {/* Secciones en la raíz */}
-            {rootSections.map((name) => (
+          {/* Lista plana de secciones */}
+          <div className="d-flex flex-column gap-1 pb-4">
+            {filteredNames.map((name) => (
               <SectionItem
                 key={name}
                 name={name}
@@ -328,7 +301,6 @@ const Sidebar = ({ items = [] }) => {
                     alert('Error eliminando la sección');
                   }
                   await refetch();
-                  await loadFolders();
                 }}
                 onRename={async () => {
                   const proposed = prompt(`Nuevo nombre para "${name}"`, name);
@@ -347,7 +319,6 @@ const Sidebar = ({ items = [] }) => {
                     return;
                   }
                   await refetch();
-                  await loadFolders();
                   if (isEditorActive && currentSection === name) {
                     const qs = new URLSearchParams();
                     if (siteSlug) qs.set('site', siteSlug);
@@ -356,90 +327,12 @@ const Sidebar = ({ items = [] }) => {
                   }
                 }}
                 onPaste={handlePaste}
-                onDragStart={handleDragStart}
                 navigate={navigate}
                 siteId={siteId}
               />
             ))}
           </div>
 
-          {/* Carpetas */}
-          {folders.map((folder) => (
-            <FolderItem
-              key={folder.id}
-              folder={folder}
-              sections={sectionsByFolder[folder.id] || []}
-              isExpanded={expandedFolders[folder.id]}
-              onToggle={() => toggleFolder(folder.id)}
-              onDelete={() => handleDeleteFolder(folder.id)}
-              onDragOver={(e) => handleDragOver(e, folder.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, folder.id)}
-              draggedOver={draggedOverFolder === folder.id}
-              currentSection={currentSection}
-              isEditorActive={isEditorActive}
-              onSectionAction={async (action, sectionName) => {
-                if (action === 'delete') {
-                  if (!confirm(`¿Eliminar la sección "${sectionName}"? Esta acción no se puede deshacer.`)) return;
-                  const result = await deleteSection(sectionName, siteId);
-                  if (!result.ok) {
-                    alert('Error eliminando la sección');
-                  }
-                  await refetch();
-                  await loadFolders();
-                } else if (action === 'rename') {
-                  const proposed = prompt(`Nuevo nombre para "${sectionName}"`, sectionName);
-                  const newName = (proposed || '').trim();
-                  if (!newName || newName === sectionName) return;
-                  const res = await renameSection(sectionName, newName, siteId);
-                  if (!res.ok) {
-                    if (res.code === 'conflict') {
-                      alert('Ya existe una sección con ese nombre.');
-                    } else {
-                      alert('No se pudo renombrar la sección');
-                    }
-                    return;
-                  }
-                  await refetch();
-                  await loadFolders();
-                  if (isEditorActive && currentSection === sectionName) {
-                    const qs = new URLSearchParams();
-                    if (siteSlug) qs.set('site', siteSlug);
-                    qs.set('section', newName);
-                    navigate(`/editor?${qs.toString()}`);
-                  }
-                }
-              }}
-              onDragStartSection={handleDragStart}
-              navigate={navigate}
-              onContextMenu={handleContextMenu}
-              siteId={siteId}
-            />
-          ))}
-
-          {/* Menú contextual */}
-          {contextMenu && (
-            <div
-              className="dropdown-menu show position-fixed"
-              style={{
-                left: `${contextMenu.x}px`,
-                top: `${contextMenu.y}px`,
-                zIndex: 1000,
-                minWidth: '200px',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {hasClipboard() && (
-                <button
-                  className="dropdown-item"
-                  onClick={handleContextMenuPaste}
-                  type="button"
-                >
-                  <i className="bi bi-clipboard me-2"></i> Pegar Sección
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </aside>
@@ -471,23 +364,32 @@ function SectionItem({ name, isActive, onDelete, onRename, onPaste, onDragStart,
     <div
       draggable
       onDragStart={handleDragStartLocal}
-      className="mb-2 d-flex flex-column align-items-start justify-content-between gap-1"
-      style={{ width: '100%', overflowX: 'hidden' }}
+      className={`mb-2 d-flex flex-column align-items-start justify-content-between p-2 rounded transition-all ${isActive ? 'shadow-sm' : 'bg-white hover-bg-light border'}`}
+      style={{ 
+        width: '100%', 
+        overflowX: 'hidden',
+        border: '1px solid #e2e8f0',
+        backgroundColor: isActive ? '#f8f9fa' : '#ffffff',
+        marginBottom: '8px'
+      }}
     >
-      <div className="grow d-flex align-items-center gap-2 w-100" style={{ minWidth: 0, paddingRight: '8px' }}>
+      <div className="grow d-flex align-items-center gap-2 w-100" style={{ minWidth: 0 }}>
         <Link
           to={toHref}
-          className={`btn btn-sm btn-a50104 d-inline-flex align-items-center${isActive ? " active" : ""}`}
-          style={{ minWidth: 0, overflow: 'hidden', flex: '1 1 auto', maxWidth: 'calc(100% - 36px)' }}
+          className={`d-inline-flex align-items-center text-decoration-none ${isActive ? "text-purple-700 fw-bold" : "text-dark"}`}
+          style={{ 
+             minWidth: 0, 
+             overflow: 'hidden', 
+             flex: '1 1 auto', 
+             color: isActive ? '#6d28d9' : '#334155'
+          }}
           title={name}
-          aria-label={`Ir a ${name}`}
-          aria-current={isActive ? "page" : undefined}
         >
-          <i className="bi bi-file-earmark-text fs-5 flex-shrink-0" aria-hidden="true"></i>
-          <span className="ms-1 text-truncate" style={{ maxWidth: '100%' }}>{name}</span>
+          <i className={`bi ${isActive ? 'bi-file-earmark-check-fill' : 'bi-file-earmark-text'} fs-5 flex-shrink-0 me-2`} style={{ color: isActive ? '#8b5cf6' : '#94a3b8' }}></i>
+          <span className="text-truncate" style={{ fontSize: '0.9rem' }}>{name}</span>
         </Link>
         
-        <div style={{ flexShrink: 0, marginLeft: '4px' }}>
+        <div style={{ flexShrink: 0, marginLeft: 'auto' }}>
           <SectionMenu
             sectionName={name}
             onDelete={onDelete}
@@ -496,13 +398,6 @@ function SectionItem({ name, isActive, onDelete, onRename, onPaste, onDragStart,
             siteId={siteId}
           />
         </div>
-      </div>
-      <div>
-        {isActive ? (
-          <small className="text-success fw-semibold">Actual: {name}</small>
-        ) : (
-          <small className="text-muted fw-semibold">{name}</small>
-        )}
       </div>
     </div>
   );
