@@ -41,6 +41,22 @@ function SectionDataLoader({ sectionName, siteId }) {
   });
 
   useEffect(() => {
+    // Debug: wrap actions.deserialize to log caller and payload size so we can see what overwrote the canvas
+    try {
+      if (actions && actions.deserialize && !actions.deserialize.__wrappedForDebug) {
+        const origDeserialize = actions.deserialize.bind(actions);
+        actions.deserialize = function(d) {
+          try {
+            const size = typeof d === 'string' ? d.length : JSON.stringify(d).length;
+            console.warn('[components][debug] actions.deserialize called; payload size=', size);
+            try { throw new Error('deserialize stack'); } catch (er) { console.warn(er.stack.split('\n').slice(2,6).join('\n')); }
+          } catch(e) { console.error('[components][debug] error logging deserialize', e); }
+          return origDeserialize(d);
+        };
+        actions.deserialize.__wrappedForDebug = true;
+      }
+    } catch (e) { /* ignore debug wrap errors */ }
+
     let cancelled = false;
     async function load() {
       try {
@@ -414,9 +430,18 @@ function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
           for (const rootId of remapped.rootNodes) {
             try {
               // Using history.ignore to prevent creating an extra undo step for the tree conversion
-              actions.history.ignore().add({ nodes: nodesMap, rootNodeId: rootId }, parentId, undefined);
+              const tree = { nodes: nodesMap, rootNodeId: rootId };
+              console.log('[components][debug] pre-insert snapshot size', (function(){ try { const s = query.serialize(); return (typeof s === 'string' ? s.length : JSON.stringify(s).length); } catch(e){ return 'err'; } })());
+              console.log('[components][debug] performing addNodeTree for root', rootId, 'parent', parentId);
+              actions.history.ignore().addNodeTree(tree, parentId, undefined);
+              console.log('[components][debug] post-insert snapshot size', (function(){ try { const s = query.serialize(); return (typeof s === 'string' ? s.length : JSON.stringify(s).length); } catch(e){ return 'err'; } })());
+
+              // Schedule delayed snapshots to detect asynchronous overwrites
+              setTimeout(() => { try { console.log('[components][debug] snapshot @1s', query.serialize().slice(0,200)); } catch(e){} }, 1000);
+              setTimeout(() => { try { console.log('[components][debug] snapshot @3s', query.serialize().slice(0,200)); } catch(e){} }, 3000);
+              setTimeout(() => { try { console.log('[components][debug] snapshot @6s', query.serialize().slice(0,200)); } catch(e){} }, 6000);
             } catch (e) {
-              console.error('[components] actions.add failed for root', rootId, e);
+              console.error('[components] addNodeTree failed for root', rootId, e);
               // If add fails, try a fallback merge-deserialize for robustness
               Object.assign(currentObj, remapped.newNodes);
               currentObj.ROOT = currentObj.ROOT || { nodes: [] };
