@@ -1,4 +1,4 @@
-import { supabase, uploadImage } from '../SupabaseCredentials';
+import { supabase, uploadImage } from '../../SupabaseCredentials';
 
 const TABLE = 'ComponentesActualizables';
 const MAX_JSON_BYTES = 100 * 1024; // 100 KB default limit for a component JSON (configurable)

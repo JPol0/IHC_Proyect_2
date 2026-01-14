@@ -16,6 +16,12 @@ import { FileDownload } from '../user/FileDownload';
 import { ForumButton } from '../user/ForumButton';
 import { LikeButton } from '../user/LikeButton';
 import { Navbar } from '../user/Navbar';
+import { HeroSection } from '../user/HeroSection';
+import { NewsSection } from '../user/NewsSection';
+import { CategoryGrid } from '../user/CategoryGrid';
+import { FeaturedPhoto } from '../user/FeaturedPhoto';
+import { ForumCTA } from '../user/ForumCTA';
+import { HomepageSection } from '../user/HomepageSection';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -100,6 +106,141 @@ export default function LeftSidebar() {
                        
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>)} icon="bi-layout-sidebar" label="Columnas" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Navbar />)} icon="bi-menu-button-wide" label="Barra Nav" />
+                       
+                       {/* Componentes Predefinidos Home */}
+                       <div className="col-12 mt-3">
+                         <h6 className="fw-bold fs-7 text-uppercase text-muted mb-2 small" style={{ letterSpacing: '0.5px' }}>Plantillas Home</h6>
+                       </div>
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             // Crear la plantilla completa de Homepage con valores exactos de la imagen
+                             connectors.create(ref, 
+                               <Element is={BackgroundImageContainer} padding={0} background="#ffffff" canvas>
+                                 {/* Navbar con valores exactos */}
+                                 <Element is={Navbar} 
+                                   logoText="Akaru"
+                                   backgroundColor="#1a1a1a"
+                                   itemColor="#ffffff"
+                                   itemHoverColor="#ff6b35"
+                                   navItems={JSON.stringify([
+                                     { label: "Foro", actionType: "section", sectionName: "foro" },
+                                     { label: "Tribus", actionType: "section", sectionName: "tribus" },
+                                     { label: "Fauna", actionType: "section", sectionName: "fauna" },
+                                     { label: "Flora", actionType: "section", sectionName: "flora" },
+                                     { label: "Usos", actionType: "section", sectionName: "usos" },
+                                     { label: "Agua", actionType: "section", sectionName: "agua" },
+                                     { label: "Cultura", actionType: "section", sectionName: "cultura" },
+                                     { label: "Geografia", actionType: "section", sectionName: "geografia" }
+                                   ])}
+                                 />
+                                 
+                                 {/* Hero Section con imagen de bosque */}
+                                 <Element is={HeroSection}
+                                   height={500}
+                                   minHeight={400}
+                                   overlayColor="rgba(0, 0, 0, 0.2)"
+                                 />
+                                 
+                                 {/* News Section - Noticias Recientes */}
+                                 <Element is={NewsSection}
+                                   title="Noticias Recientes"
+                                   titleColor="#ffffff"
+                                   titleFontSize={48}
+                                   accentColor="#ff6b35"
+                                   backgroundColor="#1a1a1a"
+                                   padding={60}
+                                   gap={24}
+                                   newsItems={JSON.stringify([
+                                     {
+                                       id: 1,
+                                       image: '',
+                                       category: 'Ambiente',
+                                       title: 'Por qué la Amazonia no produce realmente el 20% del oxigeno del mundo',
+                                       size: 'large'
+                                     },
+                                     {
+                                       id: 2,
+                                       image: '',
+                                       category: 'Oceano',
+                                       title: 'Descubre las maravillas del oceano',
+                                       size: 'small'
+                                     },
+                                     {
+                                       id: 3,
+                                       image: '',
+                                       category: 'Animales',
+                                       title: '¿Se están domesticando los zorros?',
+                                       size: 'small'
+                                     }
+                                   ])}
+                                 />
+                                 
+                                 {/* Category Grid - Conoce sobre */}
+                                 <Element is={CategoryGrid}
+                                   title="Conoce sobre"
+                                   titleColor="#ffffff"
+                                   titleFontSize={48}
+                                   accentColor="#ff6b35"
+                                   backgroundColor="#1a1a1a"
+                                   padding={60}
+                                   gap={16}
+                                   columns={4}
+                                   categories={JSON.stringify([
+                                     { id: 1, name: 'Tribus indigenas', image: '' },
+                                     { id: 2, name: 'Fauna', image: '' },
+                                     { id: 3, name: 'Flora', image: '' },
+                                     { id: 4, name: 'Usos sostenibles', image: '' },
+                                     { id: 5, name: 'Agua', image: '' },
+                                     { id: 6, name: 'Cultura', image: '' },
+                                     { id: 7, name: 'Geografia', image: '' },
+                                   ])}
+                                 />
+                                 
+                                 {/* Featured Photo */}
+                                 <Element is={FeaturedPhoto}
+                                   title="Fotografía Destacada"
+                                   titleColor="#ffffff"
+                                   titleFontSize={48}
+                                   accentColor="#ff6b35"
+                                   backgroundColor="#1a1a1a"
+                                   caption="La Densidad Infinita: 24 horas en el Parque Nacional Manú"
+                                   captionColor="#ffffff"
+                                   padding={60}
+                                   imageHeight={500}
+                                 />
+                                 
+                                 {/* Forum CTA */}
+                                 <Element is={ForumCTA}
+                                   title="Visita el foro"
+                                   titleColor="#ffffff"
+                                   titleFontSize={48}
+                                   accentColor="#ff6b35"
+                                   backgroundColor="#1a1a1a"
+                                   description="Un espacio diseñado para conectar, aprender y compartir experiencias. ¡Te estamos esperando!"
+                                   descriptionColor="#ffffff"
+                                   buttonText="Entrar ahora"
+                                   buttonColor="#ff6b35"
+                                   buttonTextColor="#ffffff"
+                                   buttonHoverColor="#e55a2b"
+                                   padding={60}
+                                   route="/forum"
+                                 />
+                               </Element>
+                             );
+                           }
+                         }} 
+                         icon="bi-house-door-fill" 
+                         label="Homepage Completa" 
+                       />
+                       <div className="col-12 mt-2 mb-2">
+                         <hr className="my-1" style={{ opacity: 0.3 }} />
+                       </div>
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <HeroSection />)} icon="bi-image" label="Hero" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <NewsSection />)} icon="bi-newspaper" label="Noticias" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <CategoryGrid />)} icon="bi-grid-3x3" label="Categorías" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <FeaturedPhoto />)} icon="bi-camera" label="Foto Destacada" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <ForumCTA />)} icon="bi-chat-dots" label="CTA Foro" />
                     </div>
                 </div>
             )}

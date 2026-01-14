@@ -16,6 +16,12 @@ import { FileDownload } from "../components/user/FileDownload";
 import { ForumButton } from '../components/user/ForumButton';
 import { LikeButton } from '../components/user/LikeButton';
 import { Navbar } from '../components/user/Navbar';
+import { HeroSection } from '../components/user/HeroSection';
+import { NewsSection } from '../components/user/NewsSection';
+import { CategoryGrid } from '../components/user/CategoryGrid';
+import { FeaturedPhoto } from '../components/user/FeaturedPhoto';
+import { ForumCTA } from '../components/user/ForumCTA';
+import { HomepageSection } from '../components/user/HomepageSection';
 
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
@@ -387,7 +393,7 @@ function App({nameSection}) {
 
   return (
     <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-      <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar }}>
+      <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection }}>
         <EditorLayout
           siteName={siteName}
           siteId={siteId}

@@ -14,6 +14,15 @@ import { ChevronButton } from './components/user/ChevronButton';
 import { IconButton } from './components/user/IconButton';
 // Columns container ha sido retirado del proyecto.
 import { FileDownload } from './components/user/FileDownload';
+import { ForumButton } from './components/user/ForumButton';
+import { LikeButton } from './components/user/LikeButton';
+import { Navbar } from './components/user/Navbar';
+import { HeroSection } from './components/user/HeroSection';
+import { NewsSection } from './components/user/NewsSection';
+import { CategoryGrid } from './components/user/CategoryGrid';
+import { FeaturedPhoto } from './components/user/FeaturedPhoto';
+import { ForumCTA } from './components/user/ForumCTA';
+import { HomepageSection } from './components/user/HomepageSection';
 
 // Estilos necesarios para que el sitio exportado luzca igual
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -32,6 +41,15 @@ const resolver = {
   ChevronButton,
   IconButton,
   FileDownload,
+  ForumButton,
+  LikeButton,
+  Navbar,
+  HeroSection,
+  NewsSection,
+  CategoryGrid,
+  FeaturedPhoto,
+  ForumCTA,
+  HomepageSection,
 };
 
 // Dimensiones objetivo del lienzo, igual que en el editor
