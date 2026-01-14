@@ -31,11 +31,19 @@ begin
 end;
 $$ language plpgsql;
 
-drop trigger if exists update_componentes_updated_at on public."ComponentesActualizables";
-create trigger update_componentes_updated_at
-  before update on public."ComponentesActualizables"
-  for each row
-  execute function update_updated_at_column();
+-- Create trigger only if it does not already exist (safer in Supabase editor)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'update_componentes_updated_at'
+  ) THEN
+    CREATE TRIGGER update_componentes_updated_at
+      BEFORE UPDATE ON public."ComponentesActualizables"
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END;
+$$;
 
 -- Optional: Row Level Security (RLS) examples
 -- enable RLS if you plan to use policies

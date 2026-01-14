@@ -42,7 +42,15 @@ export default function ComponentEditorPage() {
       const state = query.serialize();
       const rawJson = JSON.stringify(state);
       const res = await updateComponent(id, { json: rawJson });
-      if (res.ok) alert('Componente guardado'); else alert('Error: ' + (res.error?.message || 'unknown'));
+      if (res.ok) alert('Componente guardado');
+      else {
+        console.error('Update error:', res.error);
+        if (res.error && res.error.code === '42501') {
+          alert('No tienes permiso para editar este componente. Verifica que seas el propietario.');
+        } else {
+          alert('Error: ' + (res.error?.message || 'unknown'));
+        }
+      }
     } catch (e) {
       console.error(e);
       alert('Error guardando componente');

@@ -22,9 +22,23 @@ export default function ComponentesActualizables() {
     fetchList();
   }, []);
 
+  const DEFAULT_COMPONENT = JSON.stringify({
+    ROOT: { nodes: ['c_sample_text'] },
+    c_sample_text: {
+      type: { resolvedName: 'Text' },
+      isCanvas: false,
+      props: { text: 'Texto de ejemplo' },
+      displayName: 'Text',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+  });
+
   const handleCreate = async ({ name, tags, previewFile }) => {
     setModalOpen(false);
-    const res = await createComponent({ name, tags, previewFile, json: '{}' });
+    const res = await createComponent({ name, tags, previewFile, json: DEFAULT_COMPONENT });
     if (res.ok) {
       // navigate to editor for the new component
       navigate(`/componentes-actualizables/${res.component.id}/edit`);
@@ -49,8 +63,13 @@ export default function ComponentesActualizables() {
         if (!confirm('El componente es bastante grande (' + Math.round(res.component.size/1024) + ' KB). ¿Desea continuar?')) return;
       }
 
-      // Navegamos al editor y pasamos el JSON del componente para insertar
-      navigate('/editor', { state: { insertComponent: res.component.json } });
+      // Dispatch a window event with the component JSON and navigate to editor
+      try {
+        window.dispatchEvent(new CustomEvent('insertComponent', { detail: res.component.json }));
+      } catch (e) {
+        console.error('Error dispatching insert event:', e);
+      }
+      navigate('/editor');
     } catch (e) {
       setInsertingId(null);
       console.error('Error inserting component:', e);
@@ -60,7 +79,17 @@ export default function ComponentesActualizables() {
   const handleDelete = async (id) => {
     if (!confirm('Eliminar componente?')) return;
     const res = await deleteComponent(id);
-    if (res.ok) fetchList(); else alert('Error: ' + (res.error?.message || 'unknown'));
+    if (res.ok) {
+      fetchList();
+      alert('Componente eliminado');
+    } else {
+      console.error('Delete error:', res.error);
+      if (res.error && res.error.code === '42501') {
+        alert('No tienes permiso para eliminar este componente. Verifica que seas el propietario.');
+      } else {
+        alert('Error al eliminar: ' + (res.error?.message || JSON.stringify(res.error) || 'unknown'));
+      }
+    }
   };
 
   return (

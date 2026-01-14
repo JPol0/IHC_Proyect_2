@@ -168,13 +168,21 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
 
   const handleSaveAsComponent = async ({ name, tags = [], previewFile }) => {
     try {
+      // Check auth first
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !userData || !userData.user) {
+        alert('Debes iniciar sesión para guardar componentes.');
+        return;
+      }
+
       const serialized = query.serialize();
-      const payload = { name, tags, previewFile, json: serialized, site_id: siteId };
+      const payload = { name, tags, previewFile, json: serialized, site_id: siteId, owner_id: userData.user.id };
       const res = await createComponent(payload);
       if (res.ok) {
         alert('Componente guardado');
         setShowSaveAsComponent(false);
       } else {
+        console.error('Create component failed:', res.error);
         alert('Error: ' + (res.error?.message || 'unknown'));
       }
     } catch (e) {

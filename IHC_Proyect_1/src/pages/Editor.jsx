@@ -25,7 +25,8 @@ import { useUndoHistory } from '../hooks/useUndoHistory';
 
 // Carga el JSON guardado para la sección indicada y lo inyecta al editor
 function SectionDataLoader({ sectionName, siteId }) {
-  const { actions } = useEditor();
+  const { actions, query } = useEditor();
+  const location = useLocation();
   const emptyTree = useRef({
     ROOT: {
       type: { resolvedName: 'BackgroundImageContainer' },
@@ -43,7 +44,40 @@ function SectionDataLoader({ sectionName, siteId }) {
     let cancelled = false;
     async function load() {
       try {
+        // If an insertion was requested via navigation state, skip overwriting the canvas
+        const hasInsert = location && location.state && location.state.insertComponent;
+        // Also skip if we recently inserted a component (sessionStorage marker or window-level flag)
+        let recentInsert = false;
+        try {
+          const ts = Number(sessionStorage.getItem('lastComponentInsert') || '0');
+          const winTs = Number(window.__lastComponentInsert || 0);
+          const now = Date.now();
+          // Use a wider window (15s) to account for async loads and slow networks
+          if ((ts && (now - ts) < 15000) || (winTs && (now - winTs) < 15000)) recentInsert = true;
+          if (ts) console.log('[components] recentInsert ts=', ts, 'ago=', now-ts);
+          if (winTs) console.log('[components] recentInsert window ts=', winTs, 'ago=', now-winTs);
+        } catch(e) { /* ignore */ }
+
+        console.log('[components] SectionDataLoader: sectionName=', sectionName, 'hasInsert=', !!hasInsert, 'recentInsert=', recentInsert);
+
+        if (!sectionName && (hasInsert || recentInsert)) {
+          // Do not set the empty tree: insertion effect will handle adding nodes
+          console.log('[components] Skipping empty tree load due to insertion state/recentInsert');
+          return;
+        }
+
         if (!sectionName) {
+           // If no specific section, load an empty canvas — but first check current canvas: if it already has nodes, do not overwrite.
+           try {
+             const currentRaw = query.serialize();
+             const currentObj = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+             const nodeKeys = Object.keys(currentObj || {}).filter(k => k !== 'ROOT');
+             if (nodeKeys.length > 0) {
+               console.log('[components] Skipping empty tree load because canvas already has nodes:', nodeKeys.length);
+               return;
+             }
+           } catch (e) { /* if serialization fails, proceed to set empty tree */ }
+
            // Si no hay sección específica, cargamos un lienzo vacío.
            actions.deserialize(JSON.stringify(emptyTree.current));
            return;
@@ -67,7 +101,38 @@ function SectionDataLoader({ sectionName, siteId }) {
     return () => {
       cancelled = true;
     };
-  }, [sectionName, siteId, actions]);
+  }, [sectionName, siteId, actions, location]);
+
+  return null;
+}
+
+function CanvasMonitor() {
+  const { query } = useEditor();
+  const lastCountRef = React.useRef(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const interval = setInterval(() => {
+      try {
+        const serialized = query.serialize();
+        const obj = typeof serialized === 'string' ? JSON.parse(serialized) : serialized;
+        const nodeKeys = Object.keys(obj || {}).filter(k => k !== 'ROOT');
+        const count = nodeKeys.length;
+        if (lastCountRef.current === null) lastCountRef.current = count;
+        if (count === 0 && lastCountRef.current > 0) {
+          console.warn('[components][monitor] Canvas became empty; previous count=', lastCountRef.current);
+          alert('Atención: el lienzo quedó vacío inesperadamente. Revisa la consola para más detalles.');
+        }
+        if (count !== lastCountRef.current) {
+          console.log('[components][monitor] canvas node count changed:', lastCountRef.current, '->', count);
+          lastCountRef.current = count;
+        }
+      } catch (e) {
+        console.error('[components][monitor] error serializing canvas', e);
+      }
+    }, 1000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [query]);
 
   return null;
 }
@@ -218,9 +283,22 @@ function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
 
         actions.deserialize(JSON.stringify(currentObj));
 
+        // Mark recent insert to prevent SectionDataLoader from overwriting the canvas
+        try {
+          const ts = String(Date.now());
+          sessionStorage.setItem('lastComponentInsert', ts);
+          // Also set a window-level flag so new tabs/windows can see the signal faster
+          try { window.__lastComponentInsert = Number(ts); } catch(e) {}
+          // Clear the marker after a longer grace period (15s)
+          setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); delete window.__lastComponentInsert; } catch(e){} }, 15000);
+        } catch(e) { /* ignore if sessionStorage unavailable */ }
+
         // Clear navigation state so reloading doesn't re-insert
         navigate(location.pathname + (location.search || ''), { replace: true, state: {} });
-        if (!cancelled) alert('Componente insertado en el lienzo');
+        if (!cancelled) {
+          console.log('[components] Componente insertado en el lienzo. remapped root nodes:', remapped.rootNodes);
+          alert('Componente insertado en el lienzo');
+        }
       } catch (e) {
         console.error('Error al insertar componente en el lienzo:', e);
         alert('No se pudo insertar el componente: ' + (e.message || e));
@@ -230,11 +308,146 @@ function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
     applyInsert();
     return () => { cancelled = true; };
   }, [location?.state, actions, query, navigate]);
+
+  // Also listen for programmatic insertions via a window event dispatched from other pages
+  useEffect(() => {
+    let cancelled = false;
+    function remapSerializedTree(tree) {
+      try {
+        const keys = Object.keys(tree || {});
+        const oldToNew = {};
+        keys.forEach(k => { if (k !== 'ROOT') oldToNew[k] = 'c_' + Math.random().toString(36).slice(2,9); });
+
+        const newNodes = {};
+        keys.forEach(k => {
+          if (k === 'ROOT') return;
+          const node = tree[k];
+          const newNode = JSON.parse(JSON.stringify(node));
+          if (Array.isArray(newNode.nodes)) {
+            newNode.nodes = newNode.nodes.map(nid => oldToNew[nid] || nid);
+          }
+          if (newNode.linkedNodes && typeof newNode.linkedNodes === 'object') {
+            const ln = {};
+            Object.entries(newNode.linkedNodes).forEach(([lk, lv]) => {
+              ln[ oldToNew[lk] || lk ] = lv;
+            });
+            newNode.linkedNodes = ln;
+          }
+          if (newNode.id) newNode.id = oldToNew[k] || newNode.id;
+          newNodes[ oldToNew[k] ] = newNode;
+        });
+
+        const rootNodes = (tree.ROOT && Array.isArray(tree.ROOT.nodes)) ? tree.ROOT.nodes.map(nid => oldToNew[nid] || nid) : [];
+        return { newNodes, rootNodes };
+      } catch (e) {
+        console.error('remapSerializedTree error', e);
+        return null;
+      }
+    }
+
+    const handler = (ev) => {
+      const insertRaw = ev && ev.detail ? ev.detail : null;
+      if (!insertRaw) return;
+      (async function applyInsert() {
+        try {
+          const compObj = typeof insertRaw === 'string' ? JSON.parse(insertRaw) : insertRaw;
+          const remapped = remapSerializedTree(compObj);
+          if (!remapped) throw new Error('No se pudo remapear el componente');
+
+          const currentRaw = query.serialize();
+          const currentObj = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+
+          // Find a suitable parent (top-level canvas node). Prefer the first ROOT node, or any node with isCanvas=true.
+          let parentId = null;
+          try {
+            if (currentObj && currentObj.ROOT && Array.isArray(currentObj.ROOT.nodes) && currentObj.ROOT.nodes.length > 0) {
+              parentId = currentObj.ROOT.nodes[0];
+            } else {
+              const keys = Object.keys(currentObj || {}).filter(k => k !== 'ROOT');
+              for (const k of keys) {
+                const n = currentObj[k];
+                if (n && n.isCanvas) { parentId = k; break; }
+              }
+            }
+          } catch(e) { parentId = null; }
+
+          // If we couldn't find a parent, fall back to previous deserialize merge (safe fallback)
+          if (!parentId) {
+            console.warn('[components] parentId not found, falling back to deserialize merge');
+
+            Object.assign(currentObj, remapped.newNodes);
+            currentObj.ROOT = currentObj.ROOT || { nodes: [] };
+            currentObj.ROOT.nodes = (currentObj.ROOT.nodes || []).concat(remapped.rootNodes);
+
+// Set recent insert marker (longer TTL)
+          try {
+            const ts = String(Date.now());
+            sessionStorage.setItem('lastComponentInsert', ts);
+            try { window.__lastComponentInsert = Number(ts); } catch(e) {}
+            setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); delete window.__lastComponentInsert; } catch(e){} }, 15000);
+          } catch(e) {}
+
+            actions.deserialize(JSON.stringify(currentObj));
+
+            if (!cancelled) {
+              console.log('[components] (fallback) Componente insertado en el lienzo. remapped root nodes:', remapped.rootNodes);
+              alert('Componente insertado en el lienzo (fallback)');
+            }
+
+            return;
+          }
+
+          // Build node objects compatible with actions.add
+          const nodesMap = {};
+          Object.entries(remapped.newNodes).forEach(([id, node]) => {
+            try {
+              // parseSerializedNode -> toNode converts serialized node into runtime Node object
+              const parsed = query.parseSerializedNode(node).toNode((x) => x);
+              parsed.id = id;
+              nodesMap[id] = parsed;
+            } catch (e) {
+              console.warn('[components] parseSerializedNode failed for', id, e);
+            }
+          });
+
+          // For each root node, call actions.add to append under the parent canvas node
+          for (const rootId of remapped.rootNodes) {
+            try {
+              // Using history.ignore to prevent creating an extra undo step for the tree conversion
+              actions.history.ignore().add({ nodes: nodesMap, rootNodeId: rootId }, parentId, undefined);
+            } catch (e) {
+              console.error('[components] actions.add failed for root', rootId, e);
+              // If add fails, try a fallback merge-deserialize for robustness
+              Object.assign(currentObj, remapped.newNodes);
+              currentObj.ROOT = currentObj.ROOT || { nodes: [] };
+              currentObj.ROOT.nodes = (currentObj.ROOT.nodes || []).concat(remapped.rootNodes);
+              actions.deserialize(JSON.stringify(currentObj));
+            }
+          }
+
+          // Mark recent insert to prevent SectionDataLoader from overwriting the canvas
+          try { sessionStorage.setItem('lastComponentInsert', String(Date.now())); setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); } catch(e){} }, 3000); } catch(e){}
+
+          if (!cancelled) {
+            console.log('[components] Componente insertado en el lienzo via add(). remapped root nodes:', remapped.rootNodes);
+            alert('Componente insertado en el lienzo');
+          }
+        } catch (e) {
+          console.error('Error al insertar componente en el lienzo (event handler):', e);
+          alert('No se pudo insertar el componente: ' + (e.message || e));
+        }
+      })();
+    };
+
+    window.addEventListener('insertComponent', handler);
+    return () => window.removeEventListener('insertComponent', handler);
+  }, [actions, query]);
   
   return (
     <>
         <Header nameSection={sectionFromQuery} siteId={siteId} siteSlug={siteSlug} />
         <SectionDataLoader sectionName={sectionFromQuery} siteId={siteId} />
+        <CanvasMonitor />
         
         <div className="d-flex grow" style={{ minHeight: 0, flex: 1 }}>
           {/* Left Column: Pages, Components, Layers */}

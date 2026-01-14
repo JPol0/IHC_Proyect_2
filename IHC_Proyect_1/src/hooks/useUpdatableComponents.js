@@ -1,4 +1,4 @@
-import { supabase, uploadImage } from '../SupabaseCredentials';
+import { supabase, uploadImage } from '../../SupabaseCredentials';
 
 const TABLE = 'ComponentesActualizables';
 const MAX_JSON_BYTES = 100 * 1024; // 100 KB default limit for a component JSON (configurable)
@@ -31,6 +31,20 @@ export async function getComponentById(id) {
 
 export async function createComponent({ name, site_id = null, owner_id = null, json, previewFile = null, tags = [], metadata = {} } = {}) {
   try {
+    // Ensure user is authenticated if owner_id not provided (RLS will block anon inserts)
+    if (!owner_id) {
+      try {
+        const { data: userData, error: userErr } = await supabase.auth.getUser();
+        if (!userErr && userData && userData.user && userData.user.id) {
+          owner_id = userData.user.id;
+        } else {
+          return { ok: false, error: new Error('Authentication required to create components') };
+        }
+      } catch (e) {
+        return { ok: false, error: new Error('Authentication required to create components') };
+      }
+    }
+
     const jsonStr = typeof json === 'string' ? json : JSON.stringify(json);
     if (new Blob([jsonStr]).size > MAX_JSON_BYTES) {
       return { ok: false, error: new Error(`Component JSON exceeds ${MAX_JSON_BYTES} bytes limit`) };
@@ -42,8 +56,12 @@ export async function createComponent({ name, site_id = null, owner_id = null, j
       preview_url = await uploadImage(previewFile, 'assets', 'component-previews');
     }
 
-    const { data, error } = await supabase.from(TABLE).insert([{ name, site_id, owner_id, json: jsonStr, preview_url, tags, metadata, size: new Blob([jsonStr]).size }]).select('*');
-    if (error) return { ok: false, error };
+    const insertRow = { name, site_id, owner_id, json: jsonStr, preview_url, tags, metadata, size: new Blob([jsonStr]).size };
+    const { data, error } = await supabase.from(TABLE).insert([insertRow]).select('*');
+    if (error) {
+      console.error('Supabase error creating component:', error);
+      return { ok: false, error };
+    }
     return { ok: true, component: (data && data[0]) || null };
   } catch (e) {
     console.error('Error creating component:', e);
@@ -81,9 +99,12 @@ export async function updateComponent(id, { name, json, previewFile, tags, metad
 
 export async function deleteComponent(id) {
   try {
-    const { error } = await supabase.from(TABLE).delete().eq('id', id);
-    if (error) return { ok: false, error };
-    return { ok: true };
+    const { data, error } = await supabase.from(TABLE).delete().eq('id', id).select('*');
+    if (error) {
+      console.error('Supabase error deleting component:', error);
+      return { ok: false, error };
+    }
+    return { ok: true, deleted: data && data[0] ? data[0] : null };
   } catch (e) {
     console.error('Error deleting component:', e);
     return { ok: false, error: e };
