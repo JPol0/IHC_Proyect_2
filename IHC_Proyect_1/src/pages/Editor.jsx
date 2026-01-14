@@ -18,7 +18,7 @@ import { LikeButton } from '../components/user/LikeButton';
 import { Navbar } from '../components/user/Navbar';
 
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { useGetSectionData } from '../hooks/useGetSectionData';
 import { getSiteBySlug, getSiteIdBySlug } from '../hooks/useSites';
 import { useUndoHistory } from '../hooks/useUndoHistory';
@@ -80,6 +80,9 @@ function SectionDataLoader({ sectionName, siteId }) {
 
 function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
   const { undo, canUndo } = useUndoHistory();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { actions, query } = useEditor();
   
   // Canvas Configuration
   const TARGET_W = 1280;
@@ -156,6 +159,83 @@ function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
     const max = Math.max(0, vp.scrollWidth - vp.clientWidth);
     setHScroll((prev) => ({ value: Math.max(0, Math.min(prev.value, max)), max }));
   }, [scale]);
+
+  // Handle insertion from other pages: if location.state.insertComponent is provided,
+  // append the component nodes into the current canvas, remapping node IDs to avoid collisions.
+  useEffect(() => {
+    const insertRaw = location?.state && location.state.insertComponent;
+    if (!insertRaw) return;
+
+    let cancelled = false;
+
+    // Use shared util to remap ids to avoid duplicate node ids when inserting
+    // This is extracted to `src/utils/remapSerializedTree.js` so it can be unit-tested.
+    import('./../utils/remapSerializedTree').then(mod => {
+      // noop - dynamic import ensures bundlers pick up the util during dev/build
+    });
+
+    // fallback inline remapper (kept for backward compatibility)
+    function remapSerializedTree(tree) {
+      try {
+        const keys = Object.keys(tree || {});
+        const oldToNew = {};
+        keys.forEach(k => { if (k !== 'ROOT') oldToNew[k] = 'c_' + Math.random().toString(36).slice(2,9); });
+
+        const newNodes = {};
+        keys.forEach(k => {
+          if (k === 'ROOT') return;
+          const node = tree[k];
+          const newNode = JSON.parse(JSON.stringify(node));
+          if (Array.isArray(newNode.nodes)) {
+            newNode.nodes = newNode.nodes.map(nid => oldToNew[nid] || nid);
+          }
+          if (newNode.linkedNodes && typeof newNode.linkedNodes === 'object') {
+            const ln = {};
+            Object.entries(newNode.linkedNodes).forEach(([lk, lv]) => {
+              ln[ oldToNew[lk] || lk ] = lv;
+            });
+            newNode.linkedNodes = ln;
+          }
+          if (newNode.id) newNode.id = oldToNew[k] || newNode.id;
+          newNodes[ oldToNew[k] ] = newNode;
+        });
+
+        const rootNodes = (tree.ROOT && Array.isArray(tree.ROOT.nodes)) ? tree.ROOT.nodes.map(nid => oldToNew[nid] || nid) : [];
+        return { newNodes, rootNodes };
+      } catch (e) {
+        console.error('remapSerializedTree error', e);
+        return null;
+      }
+    }
+
+    async function applyInsert() {
+      try {
+        const compObj = typeof insertRaw === 'string' ? JSON.parse(insertRaw) : insertRaw;
+        const remapped = remapSerializedTree(compObj);
+        if (!remapped) throw new Error('No se pudo remapear el componente');
+
+        const currentRaw = query.serialize();
+        const currentObj = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+
+        // Merge nodes into current serialized object
+        Object.assign(currentObj, remapped.newNodes);
+        currentObj.ROOT = currentObj.ROOT || { nodes: [] };
+        currentObj.ROOT.nodes = (currentObj.ROOT.nodes || []).concat(remapped.rootNodes);
+
+        actions.deserialize(JSON.stringify(currentObj));
+
+        // Clear navigation state so reloading doesn't re-insert
+        navigate(location.pathname + (location.search || ''), { replace: true, state: {} });
+        if (!cancelled) alert('Componente insertado en el lienzo');
+      } catch (e) {
+        console.error('Error al insertar componente en el lienzo:', e);
+        alert('No se pudo insertar el componente: ' + (e.message || e));
+      }
+    }
+
+    applyInsert();
+    return () => { cancelled = true; };
+  }, [location?.state, actions, query, navigate]);
   
   return (
     <>

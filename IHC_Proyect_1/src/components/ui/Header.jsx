@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { saveSectionData } from '../../hooks/useSaveSectionData';
 import JSZip from 'jszip';
 import { supabase } from '../../../SupabaseCredentials';
+import { createComponent } from '../../hooks/useUpdatableComponents';
 
 export default function Header({ nameSection, siteId = null, siteSlug = null }) {
   const navigate = useNavigate();
@@ -16,8 +17,8 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [showSaveAsComponent, setShowSaveAsComponent] = useState(false);
   const sectionName = nameSection || '';
-
   const handleClear = () => {
     if (!confirm('¿Limpiar el lienzo? Esta acción borrará el contenido.')) return;
     const emptyTree = {
@@ -165,6 +166,23 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     }
   }
 
+  const handleSaveAsComponent = async ({ name, tags = [], previewFile }) => {
+    try {
+      const serialized = query.serialize();
+      const payload = { name, tags, previewFile, json: serialized, site_id: siteId };
+      const res = await createComponent(payload);
+      if (res.ok) {
+        alert('Componente guardado');
+        setShowSaveAsComponent(false);
+      } else {
+        alert('Error: ' + (res.error?.message || 'unknown'));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error guardando componente');
+    }
+  }
+
   const handleBack = () => {
       // Si tenemos siteSlug, volvemos a la raíz con el filtro de sitio. Si no, a la raíz limpia.
       // NOTA: La ruta raíz '/' es donde vive Dashboard.jsx
@@ -215,6 +233,15 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
         </button>
         
         <button 
+            className="btn btn-outline-secondary fw-bold px-3 shadow-sm me-2" 
+            onClick={() => navigate('/componentes-actualizables')}
+            style={{ borderRadius: '6px', fontSize: '0.85rem', height: '38px' }}
+            title="Componentes actualizables"
+        >
+            <i className="bi bi-puzzle" />
+        </button>
+
+        <button 
             className="btn text-white fw-bold px-4 shadow-sm" 
             onClick={handleSave} 
             disabled={!enabled || isSaving}
@@ -230,6 +257,7 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
             </button>
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                 <li><button className="dropdown-item py-2 small" onClick={handleImport}><i className="bi bi-braces me-2 text-primary opacity-75"></i> Importar JSON</button></li>
+                <li><button className="dropdown-item py-2 small" onClick={() => setShowSaveAsComponent(true)}><i className="bi bi-patch-plus me-2 text-success opacity-85"></i> Guardar como componente</button></li>
                 <li><hr className="dropdown-divider" /></li>
                  <li><button className="dropdown-item py-2 small text-danger" onClick={handleClear}><i className="bi bi-trash me-2"></i> Limpiar Lienzo</button></li>
             </ul>
@@ -252,6 +280,36 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
                 <div className="d-flex justify-content-end gap-2">
                     <button className="btn btn-secondary btn-sm" onClick={() => setShowImport(false)}>Cancelar</button>
                     <button className="btn btn-primary btn-sm" onClick={performImport}>Importar</button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {showSaveAsComponent && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 9999, background: 'rgba(0,0,0,0.5)' }}>
+            <div className="bg-white p-4 rounded shadow" style={{ width: '500px' }}>
+                <h5 className="mb-3">Guardar como componente actualizable</h5>
+                <div className="mb-2">
+                  <label className="form-label">Nombre</label>
+                  <input className="form-control form-control-sm" id="_component_name" />
+                </div>
+                <div className="mb-2">
+                  <label className="form-label">Tags (comma separated)</label>
+                  <input className="form-control form-control-sm" id="_component_tags" />
+                </div>
+                <div className="mb-2">
+                  <label className="form-label">Preview</label>
+                  <input type="file" accept="image/*" className="form-control form-control-sm" id="_component_preview" />
+                </div>
+
+                <div className="d-flex justify-content-end gap-2">
+                    <button className="btn btn-secondary btn-sm" onClick={() => setShowSaveAsComponent(false)}>Cancelar</button>
+                    <button className="btn btn-primary btn-sm" onClick={async () => {
+                        const name = document.getElementById('_component_name').value;
+                        const tags = (document.getElementById('_component_tags').value || '').split(',').map(t => t.trim()).filter(Boolean);
+                        const file = (document.getElementById('_component_preview').files || [])[0] || null;
+                        await handleSaveAsComponent({ name, tags, previewFile: file });
+                    }}>Guardar</button>
                 </div>
             </div>
         </div>
