@@ -138,7 +138,43 @@ function SectionDataLoader({ sectionName, siteId }) {
           }
         } else {
           const raw = typeof result === 'string' ? result : JSON.stringify(result);
-          actions.deserialize(raw);
+
+          // Defensive: if the current canvas already has nodes, avoid overwriting
+          // them with the fetched section unless they are identical. This prevents
+          // race conditions where an insertion/update happens locally and the
+          // loader later pulls an older/empty version from the DB.
+          try {
+            const currentRaw = query.serialize();
+            const currentObj = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+            const fetchedObj = JSON.parse(raw);
+            const currentKeys = Object.keys(currentObj || {}).filter(k => k !== 'ROOT');
+
+            // Respect insertion suppression flags if recently inserted
+            let recentInsert = false;
+            try {
+              const ts = Number(sessionStorage.getItem('lastComponentInsert') || '0');
+              const winTs = Number(window.__lastComponentInsert || 0);
+              const now = Date.now();
+              if ((ts && (now - ts) < 15000) || (winTs && (now - winTs) < 15000)) recentInsert = true;
+            } catch (e) { /* ignore */ }
+
+            // If canvas has nodes and fetched object differs from current, skip deserialize
+            const fetchedKeys = Object.keys(fetchedObj || {}).filter(k => k !== 'ROOT');
+            const sameKeys = currentKeys.length === fetchedKeys.length && currentKeys.every(k => fetchedObj[k] && currentObj[k] && JSON.stringify(fetchedObj[k]) === JSON.stringify(currentObj[k]));
+
+            if (currentKeys.length > 0 && !sameKeys) {
+              if (recentInsert) {
+                console.log('[components] Skipping deserialize because of recent insert (suppress flag)');
+              } else {
+                console.log('[components] Skipping deserialize: canvas has local nodes and differs from fetched section');
+              }
+            } else {
+              actions.deserialize(raw);
+            }
+          } catch (e) {
+            console.warn('[components] Could not compare current canvas with fetched section, applying fetched content as fallback', e);
+            actions.deserialize(raw);
+          }
         }
       } catch (e) {
         console.error('No se pudo cargar la sección desde la BD', e);
