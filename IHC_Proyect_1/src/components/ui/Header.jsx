@@ -47,6 +47,35 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
       const json = query.serialize();
       console.log('Saving section:', sectionName, json);
       await saveSectionData(sectionName, json, siteId);
+      // If the saved section contains a single top-level node, auto-create a "seleccionable" component
+      try {
+        const root = json && json.ROOT ? json.ROOT : null;
+        if (root && Array.isArray(root.nodes) && root.nodes.length === 1) {
+          // Extract subtree for that single node
+          const nodeId = root.nodes[0];
+          const subtree = {};
+          const stack = [nodeId];
+          while (stack.length) {
+            const id = stack.pop();
+            const node = json[id];
+            if (!node) continue;
+            subtree[id] = node;
+            if (Array.isArray(node.nodes)) {
+              for (const child of node.nodes) stack.push(child);
+            }
+          }
+          const minimal = { ROOT: { nodes: [nodeId] }, ...subtree };
+          // Create component with tag 'seleccionable' (and createComponent will also add 'actualizable')
+          const compName = `${sectionName} - seleccionable`;
+          const res = await createComponent({ name: compName, tags: ['seleccionable'], json: minimal, site_id: siteId });
+          if (res.ok && res.component && res.component.id) {
+            // navigate to component editor for immediate editing
+            navigate(`/componentes-actualizables/${res.component.id}/edit`);
+          }
+        }
+      } catch (e) {
+        console.error('Error auto-creating component from section:', e);
+      }
       // alert('Guardado correctamente'); // Opcional, mejor usar un toast si hubiera
     } catch (e) {
       console.error('Error al guardar la sección', e);
