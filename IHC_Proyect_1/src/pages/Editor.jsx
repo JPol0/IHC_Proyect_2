@@ -41,12 +41,18 @@ function SectionDataLoader({ sectionName, siteId }) {
   });
 
   useEffect(() => {
-    // Debug: wrap actions.deserialize to log caller and payload size so we can see what overwrote the canvas
+    // Debug: wrap actions.deserialize to log caller and payload size and optionally suppress during insertion
     try {
       if (actions && actions.deserialize && !actions.deserialize.__wrappedForDebug) {
         const origDeserialize = actions.deserialize.bind(actions);
         actions.deserialize = function(d) {
           try {
+            const now = Date.now();
+            const suppressUntil = Number(window.__suppressDeserializeUntil || 0);
+            if (suppressUntil && now < suppressUntil) {
+              console.warn('[components][debug] Skipping deserialize due to suppress flag until', suppressUntil, 'now=', now);
+              return null;
+            }
             const size = typeof d === 'string' ? d.length : JSON.stringify(d).length;
             console.warn('[components][debug] actions.deserialize called; payload size=', size);
             try { throw new Error('deserialize stack'); } catch (er) { console.warn(er.stack.split('\n').slice(2,6).join('\n')); }
@@ -299,15 +305,15 @@ function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
 
         actions.deserialize(JSON.stringify(currentObj));
 
-        // Mark recent insert to prevent SectionDataLoader from overwriting the canvas
-        try {
-          const ts = String(Date.now());
-          sessionStorage.setItem('lastComponentInsert', ts);
-          // Also set a window-level flag so new tabs/windows can see the signal faster
-          try { window.__lastComponentInsert = Number(ts); } catch(e) {}
-          // Clear the marker after a longer grace period (15s)
-          setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); delete window.__lastComponentInsert; } catch(e){} }, 15000);
-        } catch(e) { /* ignore if sessionStorage unavailable */ }
+          // Mark recent insert to prevent SectionDataLoader from overwriting the canvas
+          try {
+            const ts = Date.now();
+            sessionStorage.setItem('lastComponentInsert', String(ts));
+            try { window.__lastComponentInsert = ts; } catch(e) {}
+            // Also suppress deserialize globally for a short grace period so other callers can't overwrite
+            try { window.__suppressDeserializeUntil = ts + 15000; } catch(e) {}
+            setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); delete window.__lastComponentInsert; delete window.__suppressDeserializeUntil; } catch(e){} }, 15000);
+          } catch(e) { /* ignore if sessionStorage unavailable */ }
 
         // Clear navigation state so reloading doesn't re-insert
         navigate(location.pathname + (location.search || ''), { replace: true, state: {} });
@@ -395,12 +401,13 @@ function EditorLayout({ siteName, siteSlug, sectionFromQuery, siteId }) {
             currentObj.ROOT = currentObj.ROOT || { nodes: [] };
             currentObj.ROOT.nodes = (currentObj.ROOT.nodes || []).concat(remapped.rootNodes);
 
-// Set recent insert marker (longer TTL)
+            // Set recent insert marker and suppress deserialize (longer TTL)
           try {
-            const ts = String(Date.now());
-            sessionStorage.setItem('lastComponentInsert', ts);
-            try { window.__lastComponentInsert = Number(ts); } catch(e) {}
-            setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); delete window.__lastComponentInsert; } catch(e){} }, 15000);
+            const ts = Date.now();
+            sessionStorage.setItem('lastComponentInsert', String(ts));
+            try { window.__lastComponentInsert = ts; } catch(e) {}
+            try { window.__suppressDeserializeUntil = ts + 15000; } catch(e) {}
+            setTimeout(() => { try { sessionStorage.removeItem('lastComponentInsert'); delete window.__lastComponentInsert; delete window.__suppressDeserializeUntil; } catch(e){} }, 15000);
           } catch(e) {}
 
             actions.deserialize(JSON.stringify(currentObj));
