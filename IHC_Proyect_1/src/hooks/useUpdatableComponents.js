@@ -56,7 +56,9 @@ export async function createComponent({ name, site_id = null, owner_id = null, j
       preview_url = await uploadImage(previewFile, 'assets', 'component-previews');
     }
 
-    const insertRow = { name, site_id, owner_id, json: jsonStr, preview_url, tags, metadata, size: new Blob([jsonStr]).size };
+    // Ensure the 'actualizable' tag is always present for components created via this helper
+    const finalTags = Array.isArray(tags) ? Array.from(new Set([...tags, 'actualizable'])) : ['actualizable'];
+    const insertRow = { name, site_id, owner_id, json: jsonStr, preview_url, tags: finalTags, metadata, size: new Blob([jsonStr]).size };
     const { data, error } = await supabase.from(TABLE).insert([insertRow]).select('*');
     if (error) {
       console.error('Supabase error creating component:', error);

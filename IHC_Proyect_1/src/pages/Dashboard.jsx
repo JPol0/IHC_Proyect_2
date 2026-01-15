@@ -65,6 +65,14 @@ function Dashboard() {
       color: "#c084fc", // Light Purple
       action: () => navigate('/forum') // Uses existing logic
     }
+    ,{
+      title: "Componentes Actualizables",
+      description: "Accede a la lista de componentes guardados y edítalos individualmente.",
+      icon: "bi-puzzle",
+      buttonText: "Componentes",
+      color: "#0ea5e9",
+      action: () => navigate('/componentes-actualizables')
+    }
   ];
 
   return (

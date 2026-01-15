@@ -240,14 +240,8 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
             {isPreviewing ? 'Cargando...' : 'Previsualizar'}
         </button>
         
-        <button 
-            className="btn btn-outline-secondary fw-bold px-3 shadow-sm me-2" 
-            onClick={() => navigate('/componentes-actualizables')}
-            style={{ borderRadius: '6px', fontSize: '0.85rem', height: '38px' }}
-            title="Componentes actualizables"
-        >
-            <i className="bi bi-puzzle" />
-        </button>
+        {/* Removed direct link to Componentes Actualizables from editor header.
+          Access is now available from the Dashboard main page. */}
 
         <button 
             className="btn text-white fw-bold px-4 shadow-sm" 
