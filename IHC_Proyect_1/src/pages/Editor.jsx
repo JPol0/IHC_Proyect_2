@@ -3,6 +3,47 @@ import Header from '../components/ui/Header';
 import LeftSidebar from '../components/ui/LeftSidebar'; // Replaces Palette
 import RightSidebar from '../components/ui/RightSidebar'; // Replaces RightSidebarWithTabs
 
+// ErrorBoundary para capturar errores y evitar que la pantalla se ponga en blanco
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error capturado en Editor:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <h3>Error en el editor</h3>
+          <p style={{ color: '#666' }}>Ha ocurrido un error. Por favor, recarga la página.</p>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => window.location.reload()}
+          >
+            Recargar página
+          </button>
+          <details style={{ marginTop: '20px', textAlign: 'left' }}>
+            <summary>Detalles del error</summary>
+            <pre style={{ background: '#f5f5f5', padding: '10px', overflow: 'auto' }}>
+              {this.state.error?.toString()}
+            </pre>
+          </details>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 import { Container } from '../components/user/Container';
 import { Button } from '../components/user/Button';
 import { Card } from '../components/user/Card';
@@ -22,6 +63,10 @@ import { CategoryGrid } from '../components/user/CategoryGrid';
 import { FeaturedPhoto } from '../components/user/FeaturedPhoto';
 import { ForumCTA } from '../components/user/ForumCTA';
 import { HomepageSection } from '../components/user/HomepageSection';
+import { NewsArticle } from '../components/user/NewsArticle';
+import { NewsPageTemplate } from '../components/user/NewsPageTemplate';
+import { TribesPageTemplate } from '../components/user/TribesPageTemplate';
+import { TribesCard } from '../components/user/TribesCard';
 
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
@@ -51,10 +96,29 @@ function SectionDataLoader({ sectionName, siteId }) {
     },
   });
 
+  // Usar useRef para trackear si ya cargamos los datos iniciales
+  const hasLoadedRef = useRef(false);
+  const lastSectionRef = useRef(null);
+  const lastSiteIdRef = useRef(null);
+
   useEffect(() => {
+    // Solo cargar si cambió la sección o el sitio, no en cada render
+    const sectionChanged = lastSectionRef.current !== sectionName;
+    const siteChanged = lastSiteIdRef.current !== siteId;
+    
+    if (!sectionChanged && !siteChanged && hasLoadedRef.current) {
+      // Ya cargamos esta sección, no recargar
+      return;
+    }
+
     let cancelled = false;
     async function load() {
       try {
+        // Actualizar referencias
+        lastSectionRef.current = sectionName;
+        lastSiteIdRef.current = siteId;
+        hasLoadedRef.current = true;
+
         if (!sectionName) {
            // Si no hay sección específica, cargamos un lienzo vacío.
            actions.deserialize(JSON.stringify(emptyTree.current));
@@ -72,14 +136,16 @@ function SectionDataLoader({ sectionName, siteId }) {
         }
       } catch (e) {
         console.error('No se pudo cargar la sección desde la BD', e);
-        actions.deserialize(JSON.stringify(emptyTree.current));
+        if (!cancelled) {
+          actions.deserialize(JSON.stringify(emptyTree.current));
+        }
       }
     }
     load();
     return () => {
       cancelled = true;
     };
-  }, [sectionName, siteId, actions]);
+  }, [sectionName, siteId]); // Removido 'actions' de las dependencias
 
   return null;
 }
@@ -392,16 +458,18 @@ function App({nameSection}) {
   }, [siteSlug]);
 
   return (
-    <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-      <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection }}>
-        <EditorLayout
-          siteName={siteName}
-          siteId={siteId}
-          siteSlug={siteSlug}
-          sectionFromQuery={sectionFromQuery}
-        />
-      </Editor>
-    </div>
+    <ErrorBoundary>
+      <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, TribesCard }}>
+          <EditorLayout
+            siteName={siteName}
+            siteId={siteId}
+            siteSlug={siteSlug}
+            sectionFromQuery={sectionFromQuery}
+          />
+        </Editor>
+      </div>
+    </ErrorBoundary>
   );
 }
 

@@ -23,6 +23,8 @@ import { CategoryGrid } from './components/user/CategoryGrid';
 import { FeaturedPhoto } from './components/user/FeaturedPhoto';
 import { ForumCTA } from './components/user/ForumCTA';
 import { HomepageSection } from './components/user/HomepageSection';
+import { NewsArticle } from './components/user/NewsArticle';
+import { NewsArticle } from './components/user/NewsArticle';
 
 // Estilos necesarios para que el sitio exportado luzca igual
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -50,6 +52,10 @@ const resolver = {
   FeaturedPhoto,
   ForumCTA,
   HomepageSection,
+  NewsArticle,
+  NewsPageTemplate,
+  TribesPageTemplate,
+  TribesCard,
 };
 
 // Dimensiones objetivo del lienzo, igual que en el editor

@@ -61,8 +61,12 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     try {
       setIsPreviewing(true);
       actions.setOptions((opts) => (opts.enabled = false));
-      const serialized = query.serialize();
-      const serializedEscaped = JSON.stringify(serialized);
+      const state = query.serialize();
+      
+      // query.serialize() devuelve un string JSON
+      // Necesitamos parsearlo y luego volver a stringificarlo (igual que en handleExport)
+      // Esto asegura que el estado se inserte correctamente como objeto en el script
+      const stateString = JSON.stringify(JSON.parse(state));
 
       const html = `<!doctype html>
 <html lang="es">
@@ -77,7 +81,12 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     <script>
       window.global = window.global || window;
       window.process = window.process || { env: { NODE_ENV: 'production' } };
-      window.__CRAFT_PAGE_STATE__ = JSON.parse(${serializedEscaped});
+      try {
+        window.__CRAFT_PAGE_STATE__ = ${stateString};
+      } catch(e) {
+        console.error('Error al parsear el estado:', e);
+        window.__CRAFT_PAGE_STATE__ = null;
+      }
     </script>
     <script src="/craft-renderer-bundle.js"></script>
   </body>
@@ -93,7 +102,7 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
       win.document.close();
     } catch (e) {
       console.error('Error al previsualizar:', e);
-      alert('No se pudo abrir la previsualización.');
+      alert('No se pudo abrir la previsualización: ' + (e.message || e));
     } finally {
       actions.setOptions((opts) => (opts.enabled = true));
       setIsPreviewing(false);

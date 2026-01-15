@@ -182,11 +182,12 @@ const HeroSectionSettings = () => {
                   type="text"
                   value={props.backgroundImage ?? ''}
                   onChange={(e) => setProp((p) => (p.backgroundImage = e.target.value))}
-                  placeholder="https://..."
+                  placeholder="https://ejemplo.com/imagen.jpg"
                 />
+                <small className="text-muted">Pega aquí el link o URL de la imagen que quieres usar como fondo</small>
               </div>
               <div>
-                <label className="form-label">Subir imagen</label>
+                <label className="form-label">O subir imagen desde tu computadora</label>
                 <input
                   className="form-control form-control-sm"
                   type="file"
@@ -203,7 +204,22 @@ const HeroSectionSettings = () => {
                   disabled={isUploading}
                 />
                 {isUploading && <div className="text-info small mt-1">Subiendo imagen...</div>}
+                <small className="text-muted">La imagen se subirá a Supabase y se guardará automáticamente</small>
               </div>
+              {props.backgroundImage && (
+                <div className="mt-2">
+                  <label className="form-label small">Vista previa:</label>
+                  <div style={{
+                    width: '100%',
+                    height: '150px',
+                    backgroundImage: `url(${props.backgroundImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                  }} />
+                </div>
+              )}
             </div>
           )
         },

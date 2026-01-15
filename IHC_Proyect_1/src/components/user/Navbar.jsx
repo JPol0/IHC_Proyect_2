@@ -3,6 +3,7 @@ import React from "react";
 import { useNode, useEditor } from "@craftjs/core";
 import { useNavigate } from "react-router-dom";
 import { useUploadImage } from "../../hooks/useUploadImage";
+import { SettingsTabs } from "../ui/SettingsTabs";
 
 export const Navbar = ({
   // Logo props

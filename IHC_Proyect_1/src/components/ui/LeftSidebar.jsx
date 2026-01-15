@@ -22,6 +22,10 @@ import { CategoryGrid } from '../user/CategoryGrid';
 import { FeaturedPhoto } from '../user/FeaturedPhoto';
 import { ForumCTA } from '../user/ForumCTA';
 import { HomepageSection } from '../user/HomepageSection';
+import { NewsArticle } from '../user/NewsArticle';
+import { NewsPageTemplate } from '../user/NewsPageTemplate';
+import { TribesPageTemplate } from '../user/TribesPageTemplate';
+import { TribesCard } from '../user/TribesCard';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -106,6 +110,144 @@ export default function LeftSidebar() {
                        
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>)} icon="bi-layout-sidebar" label="Columnas" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Navbar />)} icon="bi-menu-button-wide" label="Barra Nav" />
+                       
+                       {/* Plantillas de Páginas Completas */}
+                       <div className="col-12 mt-3">
+                         <h6 className="fw-bold fs-7 text-uppercase text-muted mb-2 small" style={{ letterSpacing: '0.5px' }}>Plantillas de Páginas</h6>
+                       </div>
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             // Crear la plantilla completa de Página de Noticias
+                             connectors.create(ref, 
+                               <Element is={BackgroundImageContainer} padding={0} background="#000000" canvas>
+                                 {/* Navbar */}
+                                 <Element is={Navbar} 
+                                   logoText="Akaru"
+                                   backgroundColor="#1a1a1a"
+                                   itemColor="#ffffff"
+                                   itemHoverColor="#ff6b35"
+                                   navItems={JSON.stringify([
+                                     { label: "Foro", actionType: "section", sectionName: "foro" },
+                                     { label: "Tribus", actionType: "section", sectionName: "tribus" },
+                                     { label: "Fauna", actionType: "section", sectionName: "fauna" },
+                                     { label: "Flora", actionType: "section", sectionName: "flora" },
+                                     { label: "Usos", actionType: "section", sectionName: "usos" },
+                                     { label: "Agua", actionType: "section", sectionName: "agua" },
+                                     { label: "Cultura", actionType: "section", sectionName: "cultura" },
+                                     { label: "Geografia", actionType: "section", sectionName: "geografia" },
+                                     { label: "Inicio", actionType: "route", route: "/" },
+                                   ])}
+                                 />
+                                 
+                                 {/* Indicador de sección */}
+                                 <div style={{ paddingLeft: '60px', paddingTop: '20px', paddingBottom: '15px', backgroundColor: '#000000', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                   <button style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', fontFamily: 'sans-serif', fontWeight: '600', borderBottom: '3px solid #ff6b35', paddingBottom: '8px', paddingLeft: '0', paddingRight: '0', cursor: 'default', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                     Noticias
+                                   </button>
+                                 </div>
+                                 
+                                 {/* Artículo de Noticias */}
+                                 <Element is={NewsArticle}
+                                   imageUrl=""
+                                   title="Por qué la Amazonia no produce realmente el 20% del oxígeno del mundo"
+                                   content="El científico Michael Coe explicó que la Amazonia consume tanto oxígeno como produce, por lo que su contribución neta al oxígeno global es prácticamente cero. La selva amazónica es un ecosistema en equilibrio donde los árboles producen oxígeno durante el día mediante la fotosíntesis, pero también consumen oxígeno durante la noche para respirar."
+                                   likeCount={1000}
+                                   commentCount={0}
+                                   backgroundColor="#000000"
+                                   padding={60}
+                                   titleFontSize={48}
+                                   contentFontSize={18}
+                                   imageHeight={500}
+                                 />
+                               </Element>
+                             );
+                           }
+                         }} 
+                         icon="bi-file-post" 
+                         label="Página de Noticias Completa" 
+                       />
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             // Crear la plantilla completa de Página de Tribus
+                             connectors.create(ref, 
+                               <Element is={BackgroundImageContainer} padding={0} background="#000000" canvas>
+                                 {/* Navbar */}
+                                 <Element is={Navbar} 
+                                   logoText="Akaru"
+                                   backgroundColor="#1a1a1a"
+                                   itemColor="#ffffff"
+                                   itemHoverColor="#ff6b35"
+                                   navItems={JSON.stringify([
+                                     { label: "Foro", actionType: "section", sectionName: "foro", active: true },
+                                     { label: "Tribus", actionType: "section", sectionName: "tribus", active: false },
+                                     { label: "Fauna", actionType: "section", sectionName: "fauna", active: false },
+                                     { label: "Flora", actionType: "section", sectionName: "flora", active: false },
+                                     { label: "Usos", actionType: "section", sectionName: "usos", active: false },
+                                     { label: "Agua", actionType: "section", sectionName: "agua", active: false },
+                                     { label: "Cultura", actionType: "section", sectionName: "cultura", active: false },
+                                     { label: "Geografia", actionType: "section", sectionName: "geografia", active: false },
+                                     { label: "Inicio", actionType: "route", route: "/", active: true },
+                                   ])}
+                                 />
+                                 
+                                 {/* Hero Section */}
+                                 <Element is={HeroSection}
+                                   backgroundImage=""
+                                   overlayColor="rgba(0, 0, 0, 0.4)"
+                                   height={400}
+                                   minHeight={400}
+                                   padding={60}
+                                 >
+                                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px', height: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 40px' }}>
+                                     <div style={{ width: '6px', height: '58px', backgroundColor: '#ff6b35', flexShrink: 0 }} />
+                                     <h1 style={{ color: '#ffffff', fontSize: '48px', fontWeight: 'bold', margin: 0, fontFamily: 'sans-serif' }}>
+                                       Tribus Indigenas
+                                     </h1>
+                                   </div>
+                                 </Element>
+                                 
+                                 {/* Grid de Cards con Sidebar */}
+                                 <div style={{ backgroundColor: '#000000', padding: '80px', position: 'relative', minHeight: '100vh' }}>
+                                   <div style={{ display: 'flex', gap: '60px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+                                     {/* Sidebar izquierdo con iconos de interacción */}
+                                     <div style={{ position: 'sticky', top: '100px', alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', flexShrink: 0, width: '80px', paddingTop: '0' }}>
+                                       <button style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '28px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Volver">
+                                         <i className="bi bi-arrow-left"></i>
+                                       </button>
+                                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                         <button style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '28px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Me gusta">
+                                           <i className="bi bi-heart"></i>
+                                         </button>
+                                         <span style={{ color: '#ffffff', fontSize: '16px', fontWeight: '500', fontFamily: 'sans-serif' }}>1k</span>
+                                       </div>
+                                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                         <button style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '28px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Comentarios">
+                                           <i className="bi bi-chat-dots"></i>
+                                         </button>
+                                       </div>
+                                     </div>
+                                     {/* Grid de Cards */}
+                                     <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '30px', width: '100%' }}>
+                                       <Element is={TribesCard} imageUrl="" title="Ubicacion Geografica" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Organizacion social" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Idiomas y Comunicacion" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Musica y Danza" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Gastronomia" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Economía y Sustentabilidad" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Vestimenta y Pintura Corporal" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                       <Element is={TribesCard} imageUrl="" title="Vivienda y Arquitectura" linkUrl="#" backgroundColor="#ffffff" titleColor="#000000" buttonColor="#000000" buttonTextColor="#000000" />
+                                     </div>
+                                   </div>
+                                 </div>
+                               </Element>
+                             );
+                           }
+                         }} 
+                         icon="bi-people" 
+                         label="Página de Tribus Completa" 
+                       />
                        
                        {/* Componentes Predefinidos Home */}
                        <div className="col-12 mt-3">
@@ -241,6 +383,7 @@ export default function LeftSidebar() {
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <CategoryGrid />)} icon="bi-grid-3x3" label="Categorías" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <FeaturedPhoto />)} icon="bi-camera" label="Foto Destacada" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <ForumCTA />)} icon="bi-chat-dots" label="CTA Foro" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <NewsArticle />)} icon="bi-file-text" label="Artículo de Noticias" />
                     </div>
                 </div>
             )}

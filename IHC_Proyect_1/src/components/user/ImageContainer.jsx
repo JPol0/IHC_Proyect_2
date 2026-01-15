@@ -1,6 +1,7 @@
 // filepath: c:\Users\Helowdas\Documents\GitHub\IHC-Proyect-1-\IHC-Proyect-1\src\components\user\BackgroundImageContainer.jsx
 import { useEditor, useNode } from '@craftjs/core';
 import { useUploadImage } from '../../hooks/useUploadImage';
+import { SettingsTabs } from '../ui/SettingsTabs';
 import React from 'react';
 
 export const BackgroundImageContainer = ({
@@ -38,6 +39,11 @@ export const BackgroundImageContainer = ({
   const { enabled, actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const handleMouseDown = (e) => {
+    // No interferir con el ROOT - dejar que Craft.js maneje los clics en el canvas
+    if (id === 'ROOT') {
+      return;
+    }
+    
     e.stopPropagation();
     e.preventDefault();
     const startX = e.clientX;
