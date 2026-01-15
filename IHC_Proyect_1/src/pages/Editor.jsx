@@ -66,6 +66,7 @@ import { HomepageSection } from '../components/user/HomepageSection';
 import { NewsArticle } from '../components/user/NewsArticle';
 import { NewsPageTemplate } from '../components/user/NewsPageTemplate';
 import { TribesPageTemplate } from '../components/user/TribesPageTemplate';
+import { FaunaPageTemplate } from '../components/user/FaunaPageTemplate';
 import { TribesCard } from '../components/user/TribesCard';
 
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
@@ -460,7 +461,7 @@ function App({nameSection}) {
   return (
     <ErrorBoundary>
       <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, TribesCard }}>
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, TribesCard }}>
           <EditorLayout
             siteName={siteName}
             siteId={siteId}

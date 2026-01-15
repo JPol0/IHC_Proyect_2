@@ -25,6 +25,7 @@ import { HomepageSection } from '../user/HomepageSection';
 import { NewsArticle } from '../user/NewsArticle';
 import { NewsPageTemplate } from '../user/NewsPageTemplate';
 import { TribesPageTemplate } from '../user/TribesPageTemplate';
+import { FaunaPageTemplate } from '../user/FaunaPageTemplate';
 import { TribesCard } from '../user/TribesCard';
 
 export default function LeftSidebar() {
@@ -247,6 +248,15 @@ export default function LeftSidebar() {
                          }} 
                          icon="bi-people" 
                          label="Página de Tribus Completa" 
+                       />
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             connectors.create(ref, <Element is={FaunaPageTemplate} />);
+                           }
+                         }} 
+                         icon="bi-tree" 
+                         label="Página de Fauna Completa" 
                        />
                        
                        {/* Componentes Predefinidos Home */}
