@@ -36,9 +36,11 @@ export default function ComponentesActualizables() {
     },
   });
 
-  const handleCreate = async ({ name, tags, previewFile }) => {
+  const handleCreate = async ({ name, tags = [], previewFile }) => {
     setModalOpen(false);
-    const res = await createComponent({ name, tags, previewFile, json: DEFAULT_COMPONENT });
+    // Ensure created components are labeled as updatable ('actualizable') for testing and UI filtering
+    const mergedTags = Array.isArray(tags) ? Array.from(new Set([...tags, 'actualizable'])) : ['actualizable'];
+    const res = await createComponent({ name, tags: mergedTags, previewFile, json: DEFAULT_COMPONENT });
     if (res.ok) {
       // navigate to editor for the new component
       navigate(`/componentes-actualizables/${res.component.id}/edit`);
