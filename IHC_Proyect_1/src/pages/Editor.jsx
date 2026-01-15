@@ -109,7 +109,33 @@ function SectionDataLoader({ sectionName, siteId }) {
         if (cancelled) return;
 
         if (!result) {
-          actions.deserialize(JSON.stringify(emptyTree.current));
+          // No data found for this section. Do NOT blindly overwrite the canvas;
+          // only apply an empty tree when the canvas is actually empty and
+          // there's no recent insertion signal.
+          try {
+            const now = Date.now();
+            const ts = Number(sessionStorage.getItem('lastComponentInsert') || 0) || Number(window.__lastComponentInsert || 0);
+            if (ts && (now - ts) < 15000) {
+              console.log('[components] Skipping empty load: recent insert detected');
+            } else {
+              try {
+                const currentRaw = query.serialize();
+                const currentObj = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+                const nodeKeys = Object.keys(currentObj || {}).filter(k => k !== 'ROOT');
+                if (nodeKeys.length === 0) {
+                  actions.deserialize(JSON.stringify(emptyTree.current));
+                } else {
+                  console.log('[components] Skipping empty load: canvas already has nodes:', nodeKeys.length);
+                }
+              } catch (e) {
+                console.warn('[components] Could not inspect current canvas; applying empty tree as fallback', e);
+                actions.deserialize(JSON.stringify(emptyTree.current));
+              }
+            }
+          } catch (e) {
+            console.error('[components] error handling empty section result', e);
+            actions.deserialize(JSON.stringify(emptyTree.current));
+          }
         } else {
           const raw = typeof result === 'string' ? result : JSON.stringify(result);
           actions.deserialize(raw);
