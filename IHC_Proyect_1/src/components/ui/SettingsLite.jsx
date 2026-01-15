@@ -3,23 +3,32 @@ import { useEditor } from '@craftjs/core';
 
 export default function SettingsLite() {
 
-  const { actions,selected } = useEditor((state, query) => {
-      const [currentNodeId] = state.events.selected;
-      let selected;
-  
-      if ( currentNodeId ) {
+  const { actions, selected } = useEditor((state, query) => {
+    const [currentNodeId] = state.events.selected || [];
+    let selected = null;
+
+    if (currentNodeId) {
+      try {
+        const node = state.nodes && state.nodes[currentNodeId] ? state.nodes[currentNodeId] : null;
+        const name = node && node.data ? node.data.name : '(sin nombre)';
+        const settings = node && node.related ? node.related.settings : null;
+        let isDeletable = false;
+        try { isDeletable = !!(query.node && query.node(currentNodeId) && query.node(currentNodeId).isDeletable && query.node(currentNodeId).isDeletable()); } catch(e) { isDeletable = false; }
+
         selected = {
           id: currentNodeId,
-          name: state.nodes[currentNodeId].data.name,
-          settings: state.nodes[currentNodeId].related && state.nodes[currentNodeId].related.settings,
-          isDeletable: query.node(currentNodeId).isDeletable()
+          name,
+          settings,
+          isDeletable
         };
+      } catch (e) {
+        // Defensive: if state shape changes, return null selected
+        selected = null;
       }
+    }
 
-      return {
-        selected
-      }
-    });
+    return { selected };
+  });
 
   return selected ? (
     <div className="p-3">
@@ -37,7 +46,15 @@ export default function SettingsLite() {
         <button
           type="button"
           className="btn btn-outline-danger btn-sm"
-          onClick={() => actions.delete(selected.id)}
+          onClick={() => {
+            try {
+              const ts = Date.now();
+              // Suppress deserialize calls for a short window to avoid reloads
+              try { window.__suppressDeserializeUntil = ts + 5000; } catch(e) {}
+              try { sessionStorage.setItem('lastLocalChange', String(ts)); } catch(e) {}
+            } catch(e) {}
+            try { actions.delete(selected.id); } catch(e) { console.error('Delete action failed', e); }
+          }}
         >
           Eliminar
         </button>
