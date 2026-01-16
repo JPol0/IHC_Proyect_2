@@ -7,7 +7,9 @@ export const Grid2 = ({
   gap = 20,
   padding = 20,
   backgroundColor = 'transparent',
+  opacity = 1,
   gridTemplateColumns = 'repeat(2,150px)',
+  maxWidth = '100%',
   translateX = 0,
   translateY = 0,
   children
@@ -21,7 +23,9 @@ export const Grid2 = ({
     selected: node.events.selected,
   }));
   
-  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor();
+  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node }, enabled } = useEditor((state) => ({
+    enabled: state.options.enabled,
+  }));
 
   const handleMouseDown = (e) => {
     e.stopPropagation();
@@ -56,7 +60,9 @@ export const Grid2 = ({
     gap: `${gap}px`,
     padding: `${padding}px`,
     backgroundColor: backgroundColor,
+    opacity: Math.max(0, Math.min(1, Number(opacity) || 1)),
     width: '100%',
+    maxWidth: maxWidth,
     margin: '0 auto',
     outline: selected ? '2px dashed #3b82f6' : undefined,
     outlineOffset: '-2px',
@@ -72,7 +78,7 @@ export const Grid2 = ({
     >
        {children}
        
-       {selected && (
+       {selected && enabled && (
         <div 
             className="position-absolute d-flex align-items-center px-3 rounded-top shadow-sm"
             style={{
@@ -102,13 +108,21 @@ export const Grid2 = ({
                   e.stopPropagation();
                   try {
                     const currentNode = node(id).get();
-                    const freshNode = createNode(
-                      React.createElement(
-                        currentNode.data.type,
-                        { ...currentNode.data.props }
-                      )
-                    );
-                    add(freshNode, currentNode.data.parent);
+                    const { type, props, parent } = {
+                      type: currentNode.data.type,
+                      props: currentNode.data.props,
+                      parent: currentNode.data.parent,
+                    };
+                    const parentNode = node(parent).get();
+                    const siblings = parentNode.data.nodes || [];
+                    const index = Math.max(0, siblings.indexOf(id));
+                    const shiftedProps = {
+                      ...props,
+                      translateX: (Number(props.translateX) || 0) + 20,
+                      translateY: (Number(props.translateY) || 0) + 20,
+                    };
+                    const freshNode = createNode(React.createElement(type, shiftedProps));
+                    add(freshNode, parent, index + 1);
                     selectNode(freshNode.id);
                   } catch (err) {
                     console.error('Error al duplicar:', err);
@@ -163,6 +177,16 @@ export const Grid2Settings = () => {
                                 />
                             </div>
                             <div>
+                                <label className="form-label">Ancho Máximo</label>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    value={props.maxWidth}
+                                    onChange={(e) => setProp((p) => (p.maxWidth = e.target.value))}
+                                    placeholder="ej: 1000px, 100%, 80vw"
+                                />
+                            </div>
+                            <div>
                                 <label className="form-label">Color de Fondo</label>
                                 <div className="d-flex align-items-center gap-2">
                                     <input
@@ -179,6 +203,19 @@ export const Grid2Settings = () => {
                                         onChange={(e) => setProp((p) => (p.backgroundColor = e.target.value))}
                                     />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="form-label">Opacidad</label>
+                                <input
+                                    type="range"
+                                    className="form-range"
+                                    min={0}
+                                    max={1}
+                                    step={0.05}
+                                    value={props.opacity || 1}
+                                    onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
+                                />
+                                <small className="text-muted">{((props.opacity || 1) * 100).toFixed(0)}%</small>
                             </div>
                         </div>
                     )
@@ -215,7 +252,9 @@ Grid2.craft = {
     gap: 20,
     padding: 20,
     backgroundColor: 'transparent',
+    opacity: 1,
     gridTemplateColumns: 'repeat(2, 300px)',
+    maxWidth: '100%',
     translateX: 0,
     translateY: 0,
   },
