@@ -5,7 +5,7 @@ import { useNode, Element, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
-import { FeatureCard } from './FeatureCard';
+import { FeatureGrid } from './FeatureGrid';
 import { BackgroundImageContainer } from './ImageContainer';
 import { ChevronButton } from './ChevronButton';
 import { LikeButton } from './LikeButton';
@@ -63,24 +63,8 @@ export const FloraPageTemplateV2 = ({
       title: '¿Dónde comienza el río del amazonas?',
       link: '#',
     },
-    {
-      id: 6,
-      image: '',
-      title: 'Los conservacionistas salvadores de los delfines',
-      link: '#',
-    },
-    {
-      id: 7,
-      image: '',
-      title: 'Plantas compiten para superar el calentamiento global',
-      link: '#',
-    },
-    {
-      id: 8,
-      image: '',
-      title: 'Arrecife del Amazonas: un hallazgo inesperado',
-      link: '#',
-    },
+   
+
   ]),
   cardsColumns = 3,
   cardsGap = 30,
@@ -137,14 +121,6 @@ export const FloraPageTemplateV2 = ({
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   };
-
-  // Parse cards
-  let parsedCards = [];
-  try {
-    parsedCards = typeof cards === 'string' ? JSON.parse(cards) : cards;
-  } catch (e) {
-    parsedCards = [];
-  }
 
   return (
     <div
@@ -303,95 +279,20 @@ export const FloraPageTemplateV2 = ({
                 </div>
               )}
 
-              {/* Grid variado: Primera card grande, luego grid de 3 columnas */}
+              {/* Grid Destacado */}
               <div style={{
                 flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: `${cardsGap}px`,
                 width: '100%',
               }}>
-                {/* Primera fila: Card grande */}
-                {parsedCards[0] && (
-                  <div style={{ width: '100%' }}>
-                    <Element
-                      is={FeatureCard}
-                      id={`flora-v2-card-${parsedCards[0].id || 0}`}
-                      imageUrl={parsedCards[0].image || ''}
-                      title={parsedCards[0].title || ''}
-                      linkUrl={parsedCards[0].link || '#'}
-                      variant="overlay"
-                      columnSpan={1}
-                      height={400}
-                      titleFontSize={28}
-                      backgroundColor="#ffffff"
-                      titleColor="#ffffff"
-                      buttonColor="#ffffff"
-                    />
-                  </div>
-                )}
-
-                {/* Segunda fila: Grid de 2 cards */}
-                {parsedCards[1] && parsedCards[2] && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: `${cardsGap}px`,
-                  }}>
-                    <Element
-                      is={FeatureCard}
-                      id={`flora-v2-card-${parsedCards[1].id || 1}`}
-                      imageUrl={parsedCards[1].image || ''}
-                      title={parsedCards[1].title || ''}
-                      linkUrl={parsedCards[1].link || '#'}
-                      variant="default"
-                      columnSpan={1}
-                      imageHeight={250}
-                      backgroundColor="#ffffff"
-                      titleColor="#000000"
-                      buttonColor="#000000"
-                    />
-                    <Element
-                      is={FeatureCard}
-                      id={`flora-v2-card-${parsedCards[2].id || 2}`}
-                      imageUrl={parsedCards[2].image || ''}
-                      title={parsedCards[2].title || ''}
-                      linkUrl={parsedCards[2].link || '#'}
-                      variant="default"
-                      columnSpan={1}
-                      imageHeight={250}
-                      backgroundColor="#ffffff"
-                      titleColor="#000000"
-                      buttonColor="#000000"
-                    />
-                  </div>
-                )}
-
-                {/* Tercera fila en adelante: Grid de 3 columnas */}
-                {parsedCards.length > 3 && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${cardsColumns}, 1fr)`,
-                    gap: `${cardsGap}px`,
-                  }}>
-                    {parsedCards.slice(3).map((card, index) => (
-                      <Element
-                        key={card.id || index + 3}
-                        is={FeatureCard}
-                        id={`flora-v2-card-${card.id || index + 3}`}
-                        imageUrl={card.image || ''}
-                        title={card.title || ''}
-                        linkUrl={card.link || '#'}
-                        variant="default"
-                        columnSpan={1}
-                        imageHeight={200}
-                        backgroundColor="#ffffff"
-                        titleColor="#000000"
-                        buttonColor="#000000"
-                      />
-                    ))}
-                  </div>
-                )}
+                <Element
+                  is={FeatureGrid}
+                  id="flora-v2-feature-grid"
+                  cards={cards}
+                  columns={cardsColumns}
+                  gap={cardsGap}
+                  padding={0}
+                  backgroundColor="transparent"
+                />
               </div>
             </div>
           </div>
@@ -808,24 +709,6 @@ FloraPageTemplateV2.craft = {
         id: 5,
         image: '',
         title: '¿Dónde comienza el río del amazonas?',
-        link: '#',
-      },
-      {
-        id: 6,
-        image: '',
-        title: 'Los conservacionistas salvadores de los delfines',
-        link: '#',
-      },
-      {
-        id: 7,
-        image: '',
-        title: 'Plantas compiten para superar el calentamiento global',
-        link: '#',
-      },
-      {
-        id: 8,
-        image: '',
-        title: 'Arrecife del Amazonas: un hallazgo inesperado',
         link: '#',
       },
     ]),

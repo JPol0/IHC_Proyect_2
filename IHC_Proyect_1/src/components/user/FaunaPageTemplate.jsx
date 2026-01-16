@@ -5,7 +5,7 @@ import { useNode, Element, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
-import { FeatureCard } from './FeatureCard';
+import { FeatureGrid } from './FeatureGrid';
 import { BackgroundImageContainer } from './ImageContainer';
 import { useNavigate } from 'react-router-dom';
 import { useUploadImage } from '../../hooks/useUploadImage';
@@ -135,14 +135,6 @@ export const FaunaPageTemplate = ({
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   };
-
-  // Parse cards
-  let parsedCards = [];
-  try {
-    parsedCards = JSON.parse(cards);
-  } catch (e) {
-    console.error("Error parsing cards JSON", e);
-  }
 
   return (
     <div
@@ -379,30 +371,17 @@ export const FaunaPageTemplate = ({
 
               <div style={{
                 flex: 1,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${cardsColumns}, 1fr)`,
-                gap: `${cardsGap}px`,
                 width: '100%',
               }}>
-                {parsedCards.map((card, index) => (
-                  <Element
-                    key={card.id || index}
-                    is={FeatureCard}
-                    id={`fauna-card-${card.id || index}`}
-                    imageUrl={card.image || ''}
-                    title={card.title || ''}
-                    linkUrl={card.link || '#'}
-                    // Layout Logic: First card is large overlay
-                    variant={index === 0 ? 'overlay' : 'default'}
-                    columnSpan={index === 0 ? 2 : 1}
-                    // Adjust height for featured card
-                    height={index === 0 ? 400 : 300}
-                    
-                    backgroundColor="#ffffff"
-                    titleColor={index === 0 ? '#ffffff' : "#000000"} // Should overlap with variant logic but explicit safety
-                    buttonColor={index === 0 ? '#ffffff' : "#000000"} 
-                  />
-                ))}
+                <Element
+                  is={FeatureGrid}
+                  id="fauna-feature-grid"
+                  cards={cards}
+                  columns={cardsColumns}
+                  gap={cardsGap}
+                  padding={0}
+                  backgroundColor="transparent"
+                />
               </div>
             </div>
           </div>

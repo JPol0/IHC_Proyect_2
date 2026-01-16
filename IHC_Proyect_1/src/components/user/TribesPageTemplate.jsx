@@ -5,7 +5,8 @@ import { useNode, Element, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
-import { TribesCard } from './TribesCard';
+import { Grid5 } from './Grid5';
+import { FeatureCard } from './FeatureCard';
 import { BackgroundImageContainer } from './ImageContainer';
 import { useNavigate } from 'react-router-dom';
 import { useUploadImage } from '../../hooks/useUploadImage';
@@ -143,6 +144,9 @@ export const TribesPageTemplate = ({
   } catch (e) {
     parsedCards = [];
   }
+
+  // Preparar cards para Grid5: necesitamos 5 cards (3 overlay + 2 horizontal)
+  const grid5Cards = parsedCards.slice(0, 5);
 
   return (
     <div
@@ -390,28 +394,55 @@ export const TribesPageTemplate = ({
                 </div>
               )}
 
-              {/* Grid de Cards */}
+              {/* Grid 5 (3+2) */}
               <div style={{
                 flex: 1,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${cardsColumns}, 1fr)`,
-                gap: `${cardsGap}px`,
                 width: '100%',
               }}>
-                {parsedCards.map((card, index) => (
-                  <Element
-                    key={card.id || index}
-                    is={TribesCard}
-                    id={`tribes-card-${card.id || index}`}
-                    imageUrl={card.image || ''}
-                    title={card.title || ''}
-                    linkUrl={card.link || '#'}
-                    backgroundColor="#ffffff"
-                    titleColor="#000000"
-                    buttonColor="#000000"
-                    buttonTextColor="#000000"
-                  />
-                ))}
+                <Element
+                  is={Grid5}
+                  id="tribes-grid5"
+                  gap={cardsGap}
+                  padding={0}
+                  backgroundColor="transparent"
+                  gridTemplateColumns="repeat(6, 1fr)"
+                  canvas
+                >
+                  {/* Fila 1: 3 tarjetas overlay, cada una ocupa 2 columnas de 6 */}
+                  {grid5Cards.slice(0, 3).map((card, index) => (
+                    <Element
+                      key={card.id || index}
+                      is={FeatureCard}
+                      id={`tribes-card-${card.id || index}`}
+                      variant="overlay"
+                      columnSpan={2}
+                      title={card.title || ''}
+                      imageUrl={card.image || ''}
+                      linkUrl={card.link || '#'}
+                      height={200}
+                      backgroundColor="#ffffff"
+                      titleColor="#ffffff"
+                      buttonColor="#ffffff"
+                    />
+                  ))}
+                  
+                  {/* Fila 2: 2 tarjetas horizontales, cada una ocupa 3 columnas de 6 */}
+                  {grid5Cards.slice(3, 5).map((card, index) => (
+                    <Element
+                      key={card.id || index + 3}
+                      is={FeatureCard}
+                      id={`tribes-card-${card.id || index + 3}`}
+                      variant="horizontal"
+                      columnSpan={3}
+                      title={card.title || ''}
+                      imageUrl={card.image || ''}
+                      linkUrl={card.link || '#'}
+                      backgroundColor="#000000"
+                      titleColor="#ffffff"
+                      buttonColor="#ffffff"
+                    />
+                  ))}
+                </Element>
               </div>
             </div>
           </div>
