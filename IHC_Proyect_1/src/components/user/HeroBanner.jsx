@@ -129,6 +129,28 @@ export const HeroBannerSettings = () => {
     props: node.data.props
   }));
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido');
+        return;
+      }
+      
+      // Convertir a base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProp(p => p.backgroundImage = reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearImage = () => {
+    setProp(p => p.backgroundImage = '');
+  };
+
   return (
     <SettingsTabs 
       tabs={[
@@ -180,19 +202,53 @@ export const HeroBannerSettings = () => {
                 />
               </div>
               <div className="mb-3">
-                <label className="form-label">Imagen de Fondo (URL)</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  value={props.backgroundImage || ''} 
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setProp(p => p.backgroundImage = value);
-                  }}
-                  placeholder="https://example.com/image.jpg" 
-                />
-                <small className="text-muted" style={{fontSize: '0.75rem'}}>
-                  Pega aquí la URL de la imagen
+                <label className="form-label">Imagen de Fondo</label>
+                
+                {/* Opción 1: Subir desde el navegador */}
+                <div className="mb-2">
+                  <label className="btn btn-sm btn-outline-primary w-100">
+                    📁 Seleccionar imagen desde tu computadora
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+
+                {/* Separador */}
+                <div className="text-center text-muted my-2" style={{fontSize: '0.85rem'}}>
+                  o bien
+                </div>
+
+                {/* Opción 2: URL externa */}
+                <div className="input-group">
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={props.backgroundImage && props.backgroundImage.startsWith('data:') ? '' : (props.backgroundImage || '')} 
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setProp(p => p.backgroundImage = value);
+                    }}
+                    placeholder="https://example.com/image.jpg" 
+                  />
+                  {props.backgroundImage && (
+                    <button 
+                      className="btn btn-outline-danger" 
+                      type="button"
+                      onClick={clearImage}
+                      title="Eliminar imagen"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+                <small className="text-muted d-block mt-1" style={{fontSize: '0.75rem'}}>
+                  {props.backgroundImage && props.backgroundImage.startsWith('data:') 
+                    ? '✅ Imagen cargada desde tu computadora' 
+                    : 'Pega aquí la URL de una imagen externa'}
                 </small>
               </div>
               {props.backgroundImage && (
