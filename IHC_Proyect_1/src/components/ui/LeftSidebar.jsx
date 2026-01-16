@@ -30,6 +30,10 @@ import { FloraPageTemplateV2 } from '../user/FloraPageTemplateV2';
 import { AguaPageTemplate } from '../user/AguaPageTemplate';
 import { TribesCard } from '../user/TribesCard';
 import { FeatureGrid } from '../user/FeatureGrid';
+import { Grid2 } from '../user/Grid2';
+import { Grid3 } from '../user/Grid3';
+import { GridCol } from '../user/GridCol';
+import { FeatureCard } from '../user/FeatureCard';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -73,6 +77,77 @@ export default function LeftSidebar() {
     { label: "Me Gusta", icon: "bi-heart", create: (ref) => connectors.create(ref, <LikeButton />) },
     { label: "Columnas", icon: "bi-layout-sidebar", create: (ref) => connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>) },
     { label: "Barra Nav", icon: "bi-menu-button-wide", create: (ref) => connectors.create(ref, <Navbar />) },
+    { label: "Grid 2 Col", icon: "bi-grid", create: (ref) => connectors.create(ref, 
+      <Element is={Grid2} canvas>
+        <Element is={TribesCard} 
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000" 
+            title="Ubicacion Geografica"
+            imageUrl="https://placehold.co/400x300"
+        />
+        <Element is={TribesCard} 
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000" 
+            title="Organizacion Social"
+            imageUrl="https://placehold.co/400x300"
+        />
+      </Element>
+    ) },
+    { label: "Grid 3 Col", icon: "bi-grid-3x3", create: (ref) => connectors.create(ref, 
+      <Element is={Grid3} canvas>
+        <Element is={TribesCard} 
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000"
+            title="Ubicacion Geografica"
+            imageUrl="https://placehold.co/400x300"
+        />
+        <Element is={TribesCard} 
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000"
+            title="Organizacion Social"
+            imageUrl="https://placehold.co/400x300"
+        />
+        <Element is={TribesCard} 
+             backgroundColor="#ffffff" 
+             titleColor="#000000" 
+             buttonTextColor="#000000"
+             title="Idiomas y Comunicacion"
+             imageUrl="https://placehold.co/400x300"
+        />
+      </Element>
+    ) },
+    { label: "Grid Lista", icon: "bi-view-list", create: (ref) => connectors.create(ref, 
+      <Element is={GridCol} canvas>
+        <Element is={FeatureCard} 
+            variant="horizontal"
+            title="Artículo Destacado"
+            imageUrl="https://placehold.co/600x400"
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000"
+        />
+        <Element is={FeatureCard} 
+            variant="horizontal"
+            title="Artículo Secundario"
+            imageUrl="https://placehold.co/600x400"
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000"
+        />
+        <Element is={FeatureCard} 
+            variant="horizontal"
+            title="Artículo Terciario"
+            imageUrl="https://placehold.co/600x400"
+            backgroundColor="#ffffff" 
+            titleColor="#000000" 
+            buttonTextColor="#000000"
+        />
+      </Element>
+    ) },
   ];
 
   const templatesGroups = [

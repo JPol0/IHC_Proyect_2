@@ -29,6 +29,8 @@ import { TribesPageTemplate } from './components/user/TribesPageTemplate';
 import { FloraPageTemplate } from './components/user/FloraPageTemplate';
 import { AguaPageTemplate } from './components/user/AguaPageTemplate';
 import { TribesCard } from './components/user/TribesCard';
+import { Grid2 } from './components/user/Grid2';
+import { Grid3 } from './components/user/Grid3';
 
 // Estilos necesarios para que el sitio exportado luzca igual
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -62,6 +64,8 @@ const resolver = {
   FloraPageTemplate,
   AguaPageTemplate,
   TribesCard,
+  Grid2,
+  Grid3,
 };
 
 // Dimensiones objetivo del lienzo, igual que en el editor
