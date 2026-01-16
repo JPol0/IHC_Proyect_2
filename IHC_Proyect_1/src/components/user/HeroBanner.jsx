@@ -186,7 +186,7 @@ export const HeroBannerSettings = () => {
 HeroBanner.craft = {
   displayName: 'Hero Banner',
   props: {
-    title: 'Tribus Indigenas',
+    title: 'lorem ipsum',
     titleColor: '#ffffff',
     backgroundColor: '#1a1a1a',
     backgroundImage: '',
