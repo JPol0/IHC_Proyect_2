@@ -1,6 +1,6 @@
 // components/user/FeatureGrid.jsx
 import React from 'react';
-import { useNode, Element } from '@craftjs/core';
+import { useNode, Element, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { FeatureCard } from './FeatureCard';
 
@@ -43,17 +43,51 @@ export const FeatureGrid = ({
     }
   ]),
   columns = 3,
-  gap = 30,
-  padding = 40,
-  backgroundColor = 'transparent',
+  gap = 15,
+  padding = 20,
+  maxWidth = '1000px',
+  backgroundColor = '#6039CA',
+  translateX = 0,
+  translateY = 0,
 }) => {
   const {
     connectors: { connect, drag },
     selected,
-    actions: { setProp }
+    actions: { setProp },
+    id
   } = useNode((node) => ({
     selected: node.events.selected,
   }));
+  
+  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node }, enabled } = useEditor((state) => ({
+    enabled: state.options.enabled,
+  }));
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   // Parse cards
   let parsedCards = [];
@@ -67,12 +101,16 @@ export const FeatureGrid = ({
     <div
       ref={(ref) => connect(drag(ref))}
       style={{
+        position: 'relative',
         display: 'grid',
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gap: `${gap}px`,
         padding: `${padding}px`,
         backgroundColor: backgroundColor,
         width: '100%',
+        maxWidth: maxWidth,
+        margin: '0 auto',
+        transform: `translate(${Number(translateX) || 0}px, ${Number(translateY) || 0}px)`,
         outline: selected ? '2px dashed #3b82f6' : undefined,
       }}
     >
@@ -90,14 +128,75 @@ export const FeatureGrid = ({
           variant={index === 0 ? 'overlay' : 'default'}
           columnSpan={index === 0 ? 2 : 1}
           // Adjust height for featured card
-          height={index === 0 ? 400 : 300}
-          imageHeight={200}
+          height={index === 0 ? 280 : 200}
+          imageHeight={140}
           
-          backgroundColor="#ffffff"
+          backgroundColor="#6039CA"
           titleColor={index === 0 ? '#ffffff' : "#000000"} 
           buttonColor={index === 0 ? '#ffffff' : "#000000"} 
         />
       ))}
+      
+      {/* Floating Action Buttons (Only when selected and in edit mode) */}
+      {selected && enabled && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '5px',
+            right: '5px',
+            display: 'flex',
+            gap: '8px',
+            backgroundColor: '#6039CA',
+            padding: '8px',
+            borderRadius: '6px',
+            zIndex: 1000,
+            color: 'white'
+          }}
+        >
+          <i
+            className="bi bi-arrows-move"
+            title="Mover"
+            style={{ cursor: 'move', fontSize: '1.25rem' }}
+            onMouseDown={handleMouseDown}
+          />
+          <i
+            className="bi bi-files"
+            title="Duplicar"
+            style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const current = node(id).get();
+              const { type, props, parent } = {
+                type: current.data.type,
+                props: current.data.props,
+                parent: current.data.parent,
+              };
+              const parentNode = node(parent).get();
+              const siblings = parentNode.data.nodes || [];
+              const index = Math.max(0, siblings.indexOf(id));
+              const shiftedProps = {
+                ...props,
+                translateX: (Number(props.translateX) || 0) + 20,
+                translateY: (Number(props.translateY) || 0) + 20,
+              };
+              const newNode = createNode(React.createElement(type, shiftedProps));
+              add(newNode, parent, index + 1);
+              selectNode(newNode.id);
+            }}
+          />
+          <i
+            className="bi bi-trash"
+            title="Eliminar"
+            style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              deleteNode(id);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -141,6 +240,16 @@ const FeatureGridSettings = () => {
                   className="form-control form-control-sm"
                   value={props.padding}
                   onChange={(e) => setProp((p) => (p.padding = Number(e.target.value)))}
+                />
+              </div>
+              <div>
+                <label className="form-label">Ancho Máximo</label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={props.maxWidth}
+                  onChange={(e) => setProp((p) => (p.maxWidth = e.target.value))}
+                  placeholder="ej: 1000px, 100%, 80vw"
                 />
               </div>
               <div>
@@ -189,9 +298,12 @@ FeatureGrid.craft = {
         { id: 5, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 4', link: '#' }
     ]),
     columns: 3,
-    gap: 30,
-    padding: 40,
-    backgroundColor: 'transparent',
+    gap: 15,
+    padding: 20,
+    maxWidth: '1000px',
+    backgroundColor: '#6039CA',
+    translateX: 0,
+    translateY: 0,
   },
   related: {
     settings: FeatureGridSettings
