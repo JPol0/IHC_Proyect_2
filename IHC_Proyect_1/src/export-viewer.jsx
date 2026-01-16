@@ -15,6 +15,7 @@ import { IconButton } from './components/user/IconButton';
 // Columns container ha sido retirado del proyecto.
 import { FileDownload } from './components/user/FileDownload';
 import { ForumButton } from './components/user/ForumButton';
+import { Forum } from './components/user/Forum/Forum';
 import { LikeButton } from './components/user/LikeButton';
 import { Navbar } from './components/user/Navbar';
 import { HeroSection } from './components/user/HeroSection';
@@ -58,6 +59,7 @@ const resolver = {
   IconButton,
   FileDownload,
   ForumButton,
+  Forum,
   LikeButton,
   Navbar,
   HeroSection,

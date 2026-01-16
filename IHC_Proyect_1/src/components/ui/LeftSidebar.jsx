@@ -14,6 +14,7 @@ import { IconButton } from '../user/IconButton';
 import { BackgroundImageContainer } from "../user/ImageContainer";
 import { FileDownload } from '../user/FileDownload';
 import { ForumButton } from '../user/ForumButton';
+import { Forum } from '../user/Forum/Forum';
 import { LikeButton } from '../user/LikeButton';
 import { Navbar } from '../user/Navbar';
 import { HeroBanner } from '../user/HeroBanner';
@@ -77,7 +78,8 @@ export default function LeftSidebar() {
     { label: "Botón Nav", icon: "bi-chevron-bar-left", create: (ref) => connectors.create(ref, <ChevronButton direction="left" color="#E6E3A1" />) },
     { label: "Caja Img", icon: "bi-card-image", create: (ref) => connectors.create(ref, <Element is={BackgroundImageContainer} padding={16} background="#ffffff" canvas />) },
     { label: "Descarga", icon: "bi-download", create: (ref) => connectors.create(ref, <FileDownload />) },
-    { label: "Foro", icon: "bi-chat-left-text", create: (ref) => connectors.create(ref, <ForumButton />) },
+    { label: "Btn Foro", icon: "bi-chat-left-text", create: (ref) => connectors.create(ref, <ForumButton />) },
+    { label: "Foro (App)", icon: "bi-chat-square-text-fill", create: (ref) => connectors.create(ref, <Forum padding={20} />) },
     { label: "Me Gusta", icon: "bi-heart", create: (ref) => connectors.create(ref, <LikeButton />) },
     { label: "Retroceso", icon: "bi-arrow-left", create: (ref) => connectors.create(ref, <BackButton />) },
     { label: "Comentarios", icon: "bi-chat-dots", create: (ref) => connectors.create(ref, <CommentButton />) },
