@@ -1,6 +1,7 @@
 {
     "chat.tools.terminal.autoApprove": {
         "type": true,
-        "dir": true
+        "dir": true,
+        "netstat": true
     }
 }
