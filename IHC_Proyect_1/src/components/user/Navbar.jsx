@@ -759,7 +759,7 @@ const NavbarSettings = () => {
 // Default props
 export const NavbarDefaultProps = {
   logoText: "Akaru",
-  logoImageUrl: "",
+  logoImageUrl: "/src/assets/logo animus blanco 1.svg",
   showLogo: true,
   showLogoText: true,
   logoSize: 32,
