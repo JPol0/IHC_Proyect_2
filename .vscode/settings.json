@@ -2,6 +2,10 @@
     "chat.tools.terminal.autoApprove": {
         "type": true,
         "dir": true,
-        "netstat": true
+        "netstat": true,
+        "/^cd IHC_Proyect_1; cmd /c \"npm run build:renderer\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }

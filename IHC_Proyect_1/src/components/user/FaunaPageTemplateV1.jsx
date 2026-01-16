@@ -10,7 +10,7 @@ import { BackgroundImageContainer } from './ImageContainer';
 import { useNavigate } from 'react-router-dom';
 import { useUploadImage } from '../../hooks/useUploadImage';
 
-export const FloraPageTemplateV1 = ({
+export const FaunaPageTemplateV1 = ({
   showNavbar = true,
   showHero = true,
   showCards = true,
@@ -475,7 +475,7 @@ export const FloraPageTemplateV1 = ({
   );
 };
 
-const FloraPageTemplateV1Settings = () => {
+const FaunaPageTemplateV1Settings = () => {
   const { actions: { setProp }, props } = useNode((node) => ({
     props: node.data.props,
   }));
@@ -768,7 +768,7 @@ const FloraPageTemplateV1Settings = () => {
   );
 };
 
-FloraPageTemplateV1.craft = {
+FaunaPageTemplateV1.craft = {
   displayName: 'Página de Flora V1 (Card Grande + 2 Pequeñas)',
   props: {
     showNavbar: true,
@@ -822,6 +822,6 @@ FloraPageTemplateV1.craft = {
     opacity: 1,
   },
   related: {
-    settings: FloraPageTemplateV1Settings
+    settings: FaunaPageTemplateV1Settings
   }
 };
