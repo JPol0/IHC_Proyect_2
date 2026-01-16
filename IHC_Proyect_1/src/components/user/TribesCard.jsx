@@ -70,13 +70,16 @@ export const TribesCard = ({
   const handleButtonClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (enabled) return;
-    
+    // Ejecutar siempre, pero en modo edición también prevenir la selección del componente
     if (linkUrl.startsWith('http')) {
       window.open(linkUrl, linkNewTab ? '_blank' : '_self');
     } else {
       navigate(linkUrl);
     }
+  };
+
+  const handleMouseDownStop = (e) => {
+    e.stopPropagation();
   };
 
   return (
@@ -135,35 +138,26 @@ export const TribesCard = ({
         {/* Botón LEER */}
         <button
           onClick={handleButtonClick}
-          onMouseDown={(e) => {
-            if (!enabled) {
-              e.stopPropagation();
-            }
-          }}
+          onMouseDown={handleMouseDownStop}
           style={{
             background: 'transparent',
             color: buttonTextColor,
             border: 'none',
             padding: '0',
-            cursor: enabled ? 'default' : 'pointer',
+            cursor: 'pointer',
             fontSize: '14px',
             fontWeight: '600',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
             transition: 'opacity 0.2s',
-            pointerEvents: enabled ? 'none' : 'auto',
             fontFamily: 'sans-serif',
           }}
           onMouseEnter={(e) => {
-            if (!enabled) {
-              e.currentTarget.style.opacity = '0.7';
-            }
+            e.currentTarget.style.opacity = '0.7';
           }}
           onMouseLeave={(e) => {
-            if (!enabled) {
-              e.currentTarget.style.opacity = '1';
-            }
+            e.currentTarget.style.opacity = '1';
           }}
         >
           <i className="bi bi-list" style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: '1' }}></i>
@@ -279,7 +273,7 @@ const TribesCardSettings = () => {
               </div>
               
               <div>
-                <label className="form-label">Link del Botón</label>
+                <label className="form-label">Link del Botón "LEER"</label>
                 <input
                   type="text"
                   className="form-control form-control-sm"
@@ -287,7 +281,7 @@ const TribesCardSettings = () => {
                   onChange={(e) => setProp((p) => (p.linkUrl = e.target.value))}
                   placeholder="/ruta o https://..."
                 />
-                <small className="text-muted">Ruta interna o URL externa</small>
+                <small className="text-muted">Ruta interna (ej: /tribus/ubicacion) o URL externa (ej: https://...). El botón navegará a esta URL al hacer clic.</small>
               </div>
               
               <div className="form-check form-switch">

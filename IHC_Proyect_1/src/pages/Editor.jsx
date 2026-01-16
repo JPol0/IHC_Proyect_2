@@ -67,6 +67,8 @@ import { NewsArticle } from '../components/user/NewsArticle';
 import { NewsPageTemplate } from '../components/user/NewsPageTemplate';
 import { TribesPageTemplate } from '../components/user/TribesPageTemplate';
 import { FaunaPageTemplate } from '../components/user/FaunaPageTemplate';
+import { FloraPageTemplate } from '../components/user/FloraPageTemplate';
+import { AguaPageTemplate } from '../components/user/AguaPageTemplate';
 import { TribesCard } from '../components/user/TribesCard';
 import { FeatureCard } from '../components/user/FeatureCard';
 import { FeatureGrid } from '../components/user/FeatureGrid';
@@ -463,7 +465,11 @@ function App({nameSection}) {
   return (
     <ErrorBoundary>
       <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, TribesCard, FeatureCard, FeatureGrid }}>
+<<<<<<< HEAD
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, FloraPageTemplate, AguaPageTemplate, TribesCard, FeatureCard, FeatureGrid }}>
+=======
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FloraPageTemplate, AguaPageTemplate, TribesCard }}>
+>>>>>>> c016121 (Agregar plantillas de Flora y Agua con componentes editables individuales)
           <EditorLayout
             siteName={siteName}
             siteId={siteId}

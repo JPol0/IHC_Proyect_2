@@ -26,6 +26,8 @@ import { NewsArticle } from '../user/NewsArticle';
 import { NewsPageTemplate } from '../user/NewsPageTemplate';
 import { TribesPageTemplate } from '../user/TribesPageTemplate';
 import { FaunaPageTemplate } from '../user/FaunaPageTemplate';
+import { FloraPageTemplate } from '../user/FloraPageTemplate';
+import { AguaPageTemplate } from '../user/AguaPageTemplate';
 import { TribesCard } from '../user/TribesCard';
 import { FeatureGrid } from '../user/FeatureGrid';
 
@@ -254,11 +256,105 @@ export default function LeftSidebar() {
                        <ToolButton 
                          refProp={(ref) => {
                            if (ref) {
+<<<<<<< HEAD
                              connectors.create(ref, <Element is={FaunaPageTemplate} />);
                            }
                          }} 
                          icon="bi-tree" 
                          label="Página de Fauna Completa" 
+=======
+                             // Crear la plantilla completa de Página de Flora
+                             connectors.create(ref, 
+                               <Element is={FloraPageTemplate}
+                                 showNavbar={true}
+                                 showHero={true}
+                                 showCards={true}
+                                 navbarLogoText="Akaru"
+                                 navbarBackgroundColor="#1a1a1a"
+                                 navbarItemColor="#ffffff"
+                                 navbarItemHoverColor="#ff6b35"
+                                 activeNavItem="Flora"
+                                 heroImageUrl=""
+                                 heroTitle="Flora"
+                                 heroTitleColor="#ffffff"
+                                 heroTitleFontSize={48}
+                                 heroOverlayColor="rgba(0, 0, 0, 0.4)"
+                                 heroHeight={400}
+                                 cards={JSON.stringify([
+                                   { id: 1, image: '', title: '¿Contribuyó la selva amazónica a la "Pequeña Edad de Hielo" del siglo XVII?', link: '#' },
+                                   { id: 2, image: '', title: 'Importancia de la deforestación', link: '#' },
+                                   { id: 3, image: '', title: 'Biodiversidad del Amazonas', link: '#' },
+                                   { id: 4, image: '', title: 'hongos en el amazonas', link: '#' },
+                                   { id: 5, image: '', title: '¿Dónde comienza el río del amazonas?', link: '#' },
+                                   { id: 6, image: '', title: 'Los conservacionistas salvadores de los delfines', link: '#' },
+                                   { id: 7, image: '', title: 'Plantas compiten para superar el calentamiento global', link: '#' },
+                                   { id: 8, image: '', title: 'Arrecife del Amazonas: un hallazgo inesperado', link: '#' },
+                                 ])}
+                                 cardsColumns={3}
+                                 cardsGap={30}
+                                 cardsBackgroundColor="#000000"
+                                 cardsPadding={80}
+                                 showSidebar={true}
+                                 sidebarBackLink="/"
+                                 sidebarLikeCount={1000}
+                                 sidebarCommentLink="/forum"
+                                 sidebarCommentCount={0}
+                               />
+                             );
+                           }
+                         }} 
+                         icon="bi-flower2" 
+                         label="Página de Flora Completa" 
+                       />
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             // Crear la plantilla completa de Página de Agua
+                             connectors.create(ref, 
+                               <Element is={AguaPageTemplate}
+                                 showNavbar={true}
+                                 showHero={true}
+                                 showContentSections={true}
+                                 navbarLogoText="Akaru"
+                                 navbarBackgroundColor="#1a1a1a"
+                                 navbarItemColor="#ffffff"
+                                 navbarItemHoverColor="#ff6b35"
+                                 activeNavItem="Agua"
+                                 heroImageUrl=""
+                                 heroTitle="AGUA"
+                                 heroSubtitle="LA VENA VITAL DE LA AMAZONÍA"
+                                 heroDescription="Explora el sistema circulatorio de la Tierra"
+                                 heroTitleColor="#ffffff"
+                                 heroSubtitleColor="#ffffff"
+                                 heroDescriptionColor="#ff6b35"
+                                 heroTitleFontSize={48}
+                                 heroSubtitleFontSize={24}
+                                 heroDescriptionFontSize={16}
+                                 heroOverlayColor="rgba(0, 0, 0, 0.4)"
+                                 heroHeight={500}
+                                 section1Title="El Corazón Climático"
+                                 section1LeftImage=""
+                                 section1LeftTitle="El señor de los ríos"
+                                 section1LeftText="El río Amazonas cuenta con más de 1,100 afluentes y contribuye con el 20% del agua dulce líquida del mundo. Su caudal es tan poderoso que diluye la sal del océano a lo largo de cientos de kilómetros, creando un estuario único donde prospera la vida."
+                                 section1RightImage=""
+                                 section1RightTitle="Ríos Voladores: La Magia Atmosférica"
+                                 section1RightText='Los árboles liberan vapor de agua a través de la evapotranspiración, formando "ríos voladores" invisibles en la atmósfera. Estas corrientes transportan lluvia esencial miles de kilómetros hasta los Andes y las fértiles llanuras del sur del continente.'
+                                 section2Image=""
+                                 section2Title="UN UNIVERSO SUMERGIDO"
+                                 section3Title="Un Equilibrio Frágil"
+                                 section3Text="La deforestación y la contaminación por mercurio amenazan el ciclo hidrológico. Sin la selva, el agua desaparece. Sin agua, el Amazonas se convertiría en una sabana árida. Proteger los ríos es, literalmente, salvaguardar el futuro de la humanidad."
+                                 showSidebar={true}
+                                 sidebarBackLink="/"
+                                 sidebarLikeCount={1000}
+                                 sidebarCommentLink="/forum"
+                                 sidebarCommentCount={0}
+                               />
+                             );
+                           }
+                         }} 
+                         icon="bi-droplet" 
+                         label="Página de Agua Completa" 
+>>>>>>> c016121 (Agregar plantillas de Flora y Agua con componentes editables individuales)
                        />
                        
                        {/* Componentes Predefinidos Home */}
