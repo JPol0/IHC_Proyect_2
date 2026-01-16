@@ -84,6 +84,27 @@ export const AguaPageTemplate = ({
   const handleMouseDown = (e) => {
     e.stopPropagation();
     e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   };
 
   return (

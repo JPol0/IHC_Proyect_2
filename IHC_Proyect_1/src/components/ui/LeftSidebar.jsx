@@ -26,7 +26,6 @@ import { NewsArticle } from '../user/NewsArticle';
 import { NewsPageTemplate } from '../user/NewsPageTemplate';
 import { TribesPageTemplate } from '../user/TribesPageTemplate';
 import { FaunaPageTemplate } from '../user/FaunaPageTemplate';
-import { FloraPageTemplateV1 } from '../user/FloraPageTemplateV1';
 import { FloraPageTemplateV2 } from '../user/FloraPageTemplateV2';
 import { AguaPageTemplate } from '../user/AguaPageTemplate';
 import { TribesCard } from '../user/TribesCard';
@@ -204,8 +203,7 @@ export default function LeftSidebar() {
            )
          },
          { label: "Página de Fauna Completa", icon: "bi-tree", element: <Element is={FaunaPageTemplate} /> },
-         { label: "Página de Flora V1 (Card Grande)", icon: "bi-tree-fill", element: <Element is={FloraPageTemplateV1} /> },
-         { label: "Página de Flora V2 (Grid Variado)", icon: "bi-tree-fill", element: <Element is={FloraPageTemplateV2} /> },
+         { label: "Página de Flora", icon: "bi-tree-fill", element: <Element is={FloraPageTemplateV2} /> },
          { label: "Página de Agua Completa", icon: "bi-droplet-fill", element: <Element is={AguaPageTemplate} /> },
       ]
     },

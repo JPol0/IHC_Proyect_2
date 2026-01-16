@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import { supabase } from '../../../SupabaseCredentials';
 import { SettingsTabs } from "../ui/SettingsTabs";
 
@@ -14,11 +14,51 @@ const formatCount = (num) => {
   return num.toString();
 };
 
-export const LikeButton = ({ sectionId }) => {
-  const { connectors: { drag, connect } } = useNode();
+export const LikeButton = ({ 
+  sectionId,
+  translateX = 0,
+  translateY = 0,
+  zIndex = 0,
+  opacity = 1
+}) => {
+  const { 
+    id, 
+    connectors: { connect, drag }, 
+    actions: { setProp }, 
+    selected 
+  } = useNode((node) => ({
+    selected: node.events.selected,
+  }));
+  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor();
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   // Cargar el contador inicial desde Supabase
   useEffect(() => {
@@ -100,14 +140,18 @@ export const LikeButton = ({ sectionId }) => {
         gap: '0.5rem',
         padding: '8px',
         transition: 'transform 0.2s',
+        transform: `translate(${Number(translateX) || 0}px, ${Number(translateY) || 0}px)`,
+        position: 'relative',
+        zIndex: Number(zIndex) || 0,
+        opacity: Number(opacity) || 1,
       }}
       onMouseEnter={(e) => {
         if (!liked && !loading) {
-          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.transform = `translate(${Number(translateX) || 0}px, ${Number(translateY) || 0}px) scale(1.1)`;
         }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.transform = `translate(${Number(translateX) || 0}px, ${Number(translateY) || 0}px) scale(1)`;
       }}
       aria-label="Me Gusta"
     >
@@ -139,6 +183,64 @@ export const LikeButton = ({ sectionId }) => {
       }}>
         {formatCount(count)}
       </span>
+      {selected && (
+        <div 
+            className="position-absolute d-flex align-items-center px-3 rounded-top shadow-sm"
+            style={{
+                top: 0,
+                left: 0,
+                transform: 'translateY(-100%)',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                zIndex: 9999,
+                height: '42px',
+                gap: '16px',
+            }}
+         >
+             <i 
+                className="bi bi-arrows-move" 
+                title="Mover"
+                style={{ cursor: 'move', fontSize: '1.4rem' }}
+                onMouseDown={handleMouseDown}
+             />
+             <i 
+                className="bi bi-copy"
+                title="Duplicar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const current = node(id).get();
+                  const { type, props, parent } = {
+                    type: current.data.type,
+                    props: current.data.props,
+                    parent: current.data.parent,
+                  };
+                  const parentNode = node(parent).get();
+                  const siblings = parentNode.data.nodes || [];
+                  const index = Math.max(0, siblings.indexOf(id));
+                  const shiftedProps = {
+                    ...props,
+                    translateX: (Number(props.translateX) || 0) + 10,
+                    translateY: (Number(props.translateY) || 0) + 10,
+                  };
+                  const newNode = createNode(React.createElement(type, shiftedProps));
+                  add(newNode, parent, index + 1);
+                  selectNode(newNode.id);
+                }}
+             />
+             <i 
+                className="bi bi-trash" 
+                title="Eliminar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    deleteNode(id);
+                }}
+             />
+         </div>
+      )}
     </button>
   );
 };
@@ -179,6 +281,10 @@ LikeButton.craft = {
   displayName: 'Me Gusta',
   props: {
     sectionId: '',
+    translateX: 0,
+    translateY: 0,
+    zIndex: 0,
+    opacity: 1
   },
   related: {
     settings: LikeButtonSettings,

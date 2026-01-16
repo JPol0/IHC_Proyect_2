@@ -67,8 +67,34 @@ export const Navbar = ({
   } = useNode((node) => ({
     selected: node.events.selected,
   }));
-  const { actions: { add, selectNode }, query: { createNode, node } } = useEditor();
+  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor();
   const navigate = useNavigate();
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
   
   // Parse navItems
   let parsedItems = [];
@@ -247,51 +273,68 @@ export const Navbar = ({
         ))}
       </div>
       
-      {/* Duplicate button when selected */}
       {selected && (
-        <span
-          role="button"
-          aria-label="Duplicar"
-          className="position-absolute"
-          style={{
-            top: -14,
-            right: -14,
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            backgroundColor: '#590004',
-            color: '#fff',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 8px #590004, 0 0 12px #590004',
-            cursor: 'pointer',
-            zIndex: 9999,
-          }}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const current = node(id).get();
-            const { type, props, parent } = {
-              type: current.data.type,
-              props: current.data.props,
-              parent: current.data.parent,
-            };
-            const parentNode = node(parent).get();
-            const siblings = parentNode.data.nodes || [];
-            const idx = Math.max(0, siblings.indexOf(id));
-            const shiftedProps = {
-              ...props,
-              translateX: (Number(props.translateX) || 0) + 10,
-              translateY: (Number(props.translateY) || 0) + 10,
-            };
-            const newNode = createNode(React.createElement(type, shiftedProps));
-            add(newNode, parent, idx + 1);
-            selectNode(newNode.id);
-          }}
-        >
-          <i className="bi bi-copy" />
-        </span>
+        <div 
+            className="position-absolute d-flex align-items-center px-3 rounded-top shadow-sm"
+            style={{
+                top: 0,
+                left: 0,
+                transform: 'translateY(-100%)',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                zIndex: 9999,
+                height: '42px',
+                gap: '16px',
+            }}
+         >
+             {/* Move */}
+             <i 
+                className="bi bi-arrows-move" 
+                title="Mover"
+                style={{ cursor: 'move', fontSize: '1.4rem' }}
+                onMouseDown={handleMouseDown}
+             />
+
+             {/* Duplicate */}
+             <i 
+                className="bi bi-copy"
+                title="Duplicar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const current = node(id).get();
+                  const { type, props, parent } = {
+                    type: current.data.type,
+                    props: current.data.props,
+                    parent: current.data.parent,
+                  };
+                  const parentNode = node(parent).get();
+                  const siblings = parentNode.data.nodes || [];
+                  const index = Math.max(0, siblings.indexOf(id));
+                  const shiftedProps = {
+                    ...props,
+                    translateX: (Number(props.translateX) || 0) + 10,
+                    translateY: (Number(props.translateY) || 0) + 10,
+                  };
+                  const newNode = createNode(React.createElement(type, shiftedProps));
+                  add(newNode, parent, index + 1);
+                  selectNode(newNode.id);
+                }}
+             />
+
+             {/* Delete */}
+             <i 
+                className="bi bi-trash" 
+                title="Eliminar"
+                style={{ cursor: 'pointer', fontSize: '1.25rem' }}
+                onClick={(e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    deleteNode(id);
+                }}
+             />
+         </div>
       )}
     </nav>
   );

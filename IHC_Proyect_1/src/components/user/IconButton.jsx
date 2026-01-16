@@ -26,6 +26,7 @@ export const IconButton = ({
   const {
     id,
     connectors: { connect, drag },
+    actions: { setProp },
     selected
   } = useNode((node) => ({
     selected: node.events.selected

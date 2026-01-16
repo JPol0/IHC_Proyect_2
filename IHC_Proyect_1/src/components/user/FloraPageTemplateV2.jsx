@@ -7,6 +7,10 @@ import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
 import { FeatureCard } from './FeatureCard';
 import { BackgroundImageContainer } from './ImageContainer';
+import { ChevronButton } from './ChevronButton';
+import { LikeButton } from './LikeButton';
+import { IconButton } from './IconButton';
+import { Text } from './Text';
 import { useNavigate } from 'react-router-dom';
 import { useUploadImage } from '../../hooks/useUploadImage';
 
@@ -107,12 +111,31 @@ export const FloraPageTemplateV2 = ({
   }));
   
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(false);
-  const [currentLikeCount, setCurrentLikeCount] = useState(sidebarLikeCount);
 
   const handleMouseDown = (e) => {
     e.stopPropagation();
     e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = Number(translateX) || 0;
+    const initialY = Number(translateY) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      setProp((props) => {
+        props.translateX = initialX + deltaX;
+        props.translateY = initialY + deltaY;
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   };
 
   // Parse cards
@@ -226,131 +249,55 @@ export const FloraPageTemplateV2 = ({
                   width: '80px',
                   paddingTop: '0',
                 }}>
-                  <button
-                    onClick={(e) => {
-                      if (enabled) return;
-                      if (sidebarBackLink.startsWith('/')) {
-                        navigate(sidebarBackLink);
-                      } else {
-                        window.location.href = sidebarBackLink;
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      if (enabled) {
-                        e.stopPropagation();
-                      }
-                    }}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#ffffff',
-                      cursor: 'pointer',
-                      fontSize: '28px',
-                      padding: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'opacity 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                    title="Volver"
-                  >
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
-
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '10px',
-                  }}>
-                    <button
-                      onClick={(e) => {
-                        if (enabled) return;
-                        setIsLiked(!isLiked);
-                        setCurrentLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-                      }}
-                      onMouseDown={(e) => {
-                        if (enabled) {
-                          e.stopPropagation();
-                        }
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: isLiked ? '#ff0000' : '#ffffff',
-                        cursor: 'pointer',
-                        fontSize: '28px',
-                        padding: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'opacity 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                      title="Me gusta"
-                    >
-                      <i className={`bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                    </button>
-                    <span style={{
-                      color: '#ffffff',
-                      fontSize: '16px',
-                      fontWeight: '500',
-                      fontFamily: 'sans-serif',
-                    }}>
-                      {currentLikeCount >= 1000 ? `${(currentLikeCount / 1000).toFixed(1)}k` : currentLikeCount}
-                    </span>
+                  {/* Botón Volver */}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Element
+                      is={ChevronButton}
+                      id="flora-v2-back-btn"
+                      direction="left"
+                      to={sidebarBackLink}
+                      color="#ffffff"
+                      bg="transparent"
+                      size={28}
+                      padding={10}
+                    />
                   </div>
 
+                  {/* Botón Like con contador interno */}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Element
+                      is={LikeButton}
+                      id="flora-v2-like-btn"
+                      sectionId="flora-v2-page"
+                    />
+                  </div>
+
+                  {/* Botón Comentarios */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '10px',
                   }}>
-                    <button
-                      onClick={(e) => {
-                        if (enabled) return;
-                        if (sidebarCommentLink.startsWith('/')) {
-                          navigate(sidebarCommentLink);
-                        } else {
-                          window.location.href = sidebarCommentLink;
-                        }
-                      }}
-                      onMouseDown={(e) => {
-                        if (enabled) {
-                          e.stopPropagation();
-                        }
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        fontSize: '28px',
-                        padding: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'opacity 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                      title="Comentarios"
-                    >
-                      <i className="bi bi-chat-dots"></i>
-                    </button>
+                    <Element
+                      is={IconButton}
+                      id="flora-v2-comment-btn"
+                      iconName="chat-dots"
+                      iconSize={28}
+                      iconColor="#ffffff"
+                      to={sidebarCommentLink}
+                      actionType="route"
+                    />
+                    
                     {sidebarCommentCount > 0 && (
-                      <span style={{
-                        color: '#ffffff',
-                        fontSize: '16px',
-                        fontWeight: '500',
-                        fontFamily: 'sans-serif',
-                      }}>
-                        {sidebarCommentCount}
-                      </span>
+                      <Element
+                        is={Text}
+                        id="flora-v2-comment-count"
+                        text={String(sidebarCommentCount)}
+                        fontSize={16}
+                        textColor="#ffffff"
+                        fontWeight="500"
+                      />
                     )}
                   </div>
                 </div>
