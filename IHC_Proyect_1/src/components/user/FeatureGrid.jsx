@@ -46,7 +46,8 @@ export const FeatureGrid = ({
   gap = 15,
   padding = 20,
   maxWidth = '1000px',
-  backgroundColor = '#6039CA',
+  backgroundColor = 'transparent',
+  opacity = 1,
   translateX = 0,
   translateY = 0,
 }) => {
@@ -106,7 +107,6 @@ export const FeatureGrid = ({
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gap: `${gap}px`,
         padding: `${padding}px`,
-        backgroundColor: backgroundColor,
         width: '100%',
         maxWidth: maxWidth,
         margin: '0 auto',
@@ -114,6 +114,20 @@ export const FeatureGrid = ({
         outline: selected ? '2px dashed #3b82f6' : undefined,
       }}
     >
+      {/* Fondo con opacidad */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: backgroundColor,
+          opacity: Math.max(0, Math.min(1, Number(opacity) || 1)),
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
       {parsedCards.map((card, index) => (
         <Element
           key={card.id || index}
@@ -131,9 +145,9 @@ export const FeatureGrid = ({
           height={index === 0 ? 280 : 200}
           imageHeight={140}
           
-          backgroundColor="#6039CA"
           titleColor={index === 0 ? '#ffffff' : "#000000"} 
-          buttonColor={index === 0 ? '#ffffff' : "#000000"} 
+          buttonColor={index === 0 ? '#ffffff' : "#000000"}
+          style={{ position: 'relative', zIndex: 1 }}
         />
       ))}
       
@@ -146,11 +160,11 @@ export const FeatureGrid = ({
             right: '5px',
             display: 'flex',
             gap: '8px',
-            backgroundColor: '#6039CA',
+            backgroundColor: 'transparent',
             padding: '8px',
             borderRadius: '6px',
             zIndex: 1000,
-            color: 'white'
+            color: '#000000'
           }}
         >
           <i
@@ -261,6 +275,19 @@ const FeatureGridSettings = () => {
                   onChange={(e) => setProp((p) => (p.backgroundColor = e.target.value))}
                 />
               </div>
+              <div>
+                <label className="form-label">Opacidad</label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={props.opacity || 1}
+                  onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
+                />
+                <small className="text-muted">{((props.opacity || 1) * 100).toFixed(0)}%</small>
+              </div>
             </div>
           )
         },
@@ -301,7 +328,8 @@ FeatureGrid.craft = {
     gap: 15,
     padding: 20,
     maxWidth: '1000px',
-    backgroundColor: '#6039CA',
+    backgroundColor: 'transparent',
+    opacity: 1,
     translateX: 0,
     translateY: 0,
   },

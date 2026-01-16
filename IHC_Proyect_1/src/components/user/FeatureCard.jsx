@@ -22,7 +22,7 @@ export const FeatureCard = ({
   padding = 24,
   
   // Styling - Colors
-  backgroundColor = '#ffffff',
+  backgroundColor = 'transparent',
   titleColor = '#000000',
   titleFontSize = 18,
   buttonColor = '#000000',
@@ -155,7 +155,7 @@ export const FeatureCard = ({
         style={{
           ...commonStyle,
           height: `${height}px`,
-          backgroundColor: '#000000', // Fallback
+          backgroundColor: 'transparent', // Fallback
         }}
       >
         {/* Background Image */}
@@ -243,7 +243,7 @@ export const FeatureCard = ({
                     top: '-15px',
                     right: '-10px',
                     zIndex: 100,
-                    backgroundColor: 'white',
+                    backgroundColor: 'transparent',
                     borderRadius: '50%',
                     boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
                     cursor: 'pointer'
@@ -301,7 +301,7 @@ export const FeatureCard = ({
                 top: 0,
                 left: 0,
                 transform: 'translateY(-100%)',
-                backgroundColor: '#7c3aed',
+                backgroundColor: 'transparent',
                 color: '#ffffff',
                 zIndex: 9999,
                 height: '42px',
@@ -361,6 +361,27 @@ const FeatureCardSettings = () => {
     props: node.data.props,
   }));
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido.');
+        return;
+      }
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen es muy grande. Máximo 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProp((p) => (p.imageUrl = event.target.result));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <SettingsTabs
       tabs={[
@@ -393,14 +414,62 @@ const FeatureCardSettings = () => {
                 </select>
               </div>
               
-              <div>
-                <label className="form-label">URL de Imagen</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  value={props.imageUrl || ''}
-                  onChange={(e) => setProp((p) => (p.imageUrl = e.target.value))}
-                />
+              {/* Sección de Imagen Mejorada */}
+              <div className="border rounded p-2" style={{ backgroundColor: 'transparent' }}>
+                <label className="form-label fw-bold mb-2">
+                  <i className="bi bi-image me-1"></i> Imagen
+                </label>
+                
+                {/* Preview de la imagen actual */}
+                {props.imageUrl && (
+                  <div className="mb-2 text-center">
+                    <img 
+                      src={props.imageUrl} 
+                      alt="Preview" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '100px', 
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        border: '1px solid #dee2e6'
+                      }} 
+                    />
+                  </div>
+                )}
+                
+                {/* Subir desde computadora */}
+                <div className="mb-2">
+                  <label className="form-label small text-muted mb-1">Subir desde computadora:</label>
+                  <input
+                    type="file"
+                    className="form-control form-control-sm"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+                
+                {/* URL de imagen */}
+                <div>
+                  <label className="form-label small text-muted mb-1">O ingresar URL:</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                    value={props.imageUrl || ''}
+                    onChange={(e) => setProp((p) => (p.imageUrl = e.target.value))}
+                  />
+                </div>
+                
+                {/* Botón para limpiar imagen */}
+                {props.imageUrl && props.imageUrl !== 'https://placehold.co/400x300' && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm w-100 mt-2"
+                    onClick={() => setProp((p) => (p.imageUrl = 'https://placehold.co/400x300'))}
+                  >
+                    <i className="bi bi-x-circle me-1"></i> Restablecer imagen
+                  </button>
+                )}
               </div>
               
               <div>
@@ -521,7 +590,7 @@ FeatureCard.craft = {
     imageHeight: 200,
     height: 300,
     padding: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     titleColor: '#000000',
     titleFontSize: 18,
     buttonColor: '#000000',
