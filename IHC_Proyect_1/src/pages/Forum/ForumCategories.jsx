@@ -45,8 +45,9 @@ export default function ForumCategories() {
 
       let imageUrl = null;
       if (catImageFile) {
-           const res = await uploadImage(catImageFile, 'imagenes_user', 'forum');
-           if (res) imageUrl = res.publicUrl || res; // Check how uploadImage returns
+           // Usamos el bucket 'Assets' que es público, y guardamos en una carpeta 'forum'
+           const res = await uploadImage(catImageFile, 'Assets', 'forum');
+           if (res) imageUrl = res; 
       }
 
       await createCategory(catName, catDesc, imageUrl);
@@ -148,7 +149,15 @@ export default function ForumCategories() {
                         {/* Image */}
                         <div style={{ width: '120px', height: '80px', flexShrink: 0, backgroundColor: '#333', position: 'relative' }}>
                             {cat.image_url ? (
-                                <img src={cat.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img 
+                                    src={cat.image_url} 
+                                    alt={cat.name} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = 'https://via.placeholder.com/150?text=Error';
+                                    }}
+                                />
                             ) : (
                                 <div className="w-100 h-100 d-flex align-items-center justify-content-center text-muted small bg-secondary">Sin img</div>
                             )}

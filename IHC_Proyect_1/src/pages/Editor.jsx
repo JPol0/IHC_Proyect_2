@@ -55,6 +55,7 @@ import { ChevronButton } from '../components/user/ChevronButton';
 import { IconButton } from '../components/user/IconButton';
 import { FileDownload } from "../components/user/FileDownload";
 import { ForumButton } from '../components/user/ForumButton';
+import { Forum } from '../components/user/Forum/Forum';
 import { LikeButton } from '../components/user/LikeButton';
 import { Navbar } from '../components/user/Navbar';
 import { HeroBanner } from '../components/user/HeroBanner';
@@ -472,7 +473,7 @@ function App({nameSection}) {
   return (
     <ErrorBoundary>
       <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroBanner, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, FloraPageTemplateV1, FloraPageTemplateV2, AguaPageTemplate, TribesCard, FeatureCard, FeatureGrid, Grid2, Grid3, Grid5, GridCol, BackButton, CommentButton }}>
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, Forum, LikeButton, Navbar, HeroBanner, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, FloraPageTemplateV1, FloraPageTemplateV2, AguaPageTemplate, TribesCard, FeatureCard, FeatureGrid, Grid2, Grid3, Grid5, GridCol, BackButton, CommentButton }}>
           <EditorLayout
             siteName={siteName}
             siteId={siteId}
