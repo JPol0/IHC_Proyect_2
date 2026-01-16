@@ -7,6 +7,7 @@ export const HeroBanner = ({
   titleColor = "#ffffff", 
   backgroundColor = "#1a1a1a", 
   backgroundImage = "",
+  backgroundOverlay = 0.4,
   accentColor = "#e65100", 
   height = "200px" 
 }) => {
@@ -20,62 +21,105 @@ export const HeroBanner = ({
     if (!hasSelectedNode) setEditable(false);
   }, [hasSelectedNode]);
 
+  // Verificar si hay imagen de fondo válida
+  const hasBackgroundImage = backgroundImage && backgroundImage.trim() !== '';
+
   return (
     <div 
       ref={ref => connect(drag(ref))}
       onClick={() => setEditable(true)}
       style={{
-        backgroundColor: backgroundColor,
-        backgroundImage: backgroundImage ? `url("${backgroundImage}")` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        height: height,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 40px',
-        width: '100%',
         position: 'relative',
-        minHeight: '100px' // Ensure visibility
+        height: height,
+        width: '100%',
+        minHeight: '100px',
+        overflow: 'hidden'
       }}
     >
-      <div style={{
-          content: '""',
-          display: 'block',
-          width: '6px',
-          height: '60px',
-          backgroundColor: accentColor,
-          marginRight: '20px'
-      }}></div>
+      {/* Capa de fondo con color o imagen */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: backgroundColor,
+          ...(hasBackgroundImage && {
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          })
+        }}
+      />
       
-      {editable ? (
-        <input 
-          type="text" 
-          value={title} 
-          onChange={(e) => {
-             const val = e.target.value;
-             setProp(props => props.title = val);
-          }}
+      {/* Overlay oscuro para mejorar legibilidad del texto */}
+      {hasBackgroundImage && (
+        <div 
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: `rgba(0, 0, 0, ${backgroundOverlay})`,
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+      
+      {/* Contenido principal */}
+      <div 
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 40px'
+        }}
+      >
+        <div style={{
+            display: 'block',
+            width: '6px',
+            height: '60px',
+            backgroundColor: accentColor,
+            marginRight: '20px',
+            flexShrink: 0
+        }}></div>
+        
+        {editable ? (
+          <input 
+            type="text" 
+            value={title} 
+            onChange={(e) => {
+               const val = e.target.value;
+               setProp(props => props.title = val);
+            }}
+            style={{
+              fontSize: '3rem',
+              fontWeight: 'bold',
+              color: titleColor,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              width: '100%',
+              textShadow: hasBackgroundImage ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none'
+            }}
+          />
+        ) : (
+          <h1 style={{
             fontSize: '3rem',
             fontWeight: 'bold',
             color: titleColor,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            width: '100%'
-          }}
-        />
-      ) : (
-        <h1 style={{
-          fontSize: '3rem',
-          fontWeight: 'bold',
-          color: titleColor,
-          margin: 0
-        }}>
-          {title}
-        </h1>
-      )}
+            margin: 0,
+            textShadow: hasBackgroundImage ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none'
+          }}>
+            {title}
+          </h1>
+        )}
+      </div>
     </div>
   );
 };
@@ -151,6 +195,26 @@ export const HeroBannerSettings = () => {
                   Pega aquí la URL de la imagen
                 </small>
               </div>
+              {props.backgroundImage && (
+                <div className="mb-3">
+                  <label className="form-label">Oscurecimiento del Overlay: {Math.round((props.backgroundOverlay || 0.4) * 100)}%</label>
+                  <input 
+                    type="range" 
+                    className="form-range" 
+                    min="0" 
+                    max="1" 
+                    step="0.1"
+                    value={props.backgroundOverlay || 0.4} 
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      setProp(p => p.backgroundOverlay = value);
+                    }} 
+                  />
+                  <small className="text-muted" style={{fontSize: '0.75rem'}}>
+                    Ajusta la oscuridad sobre la imagen para mejorar legibilidad
+                  </small>
+                </div>
+              )}
               <div className="mb-3">
                 <label className="form-label">Color de la Barra (Acento)</label>
                 <input 
@@ -190,6 +254,7 @@ HeroBanner.craft = {
     titleColor: '#ffffff',
     backgroundColor: '#1a1a1a',
     backgroundImage: '',
+    backgroundOverlay: 0.4,
     accentColor: '#e65100',
     height: '200px'
   },
