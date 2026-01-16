@@ -36,6 +36,8 @@ import { Grid3 } from '../user/Grid3';
 import { Grid5 } from '../user/Grid5';
 import { GridCol } from '../user/GridCol';
 import { FeatureCard } from '../user/FeatureCard';
+import { BackButton } from '../user/BackButton';
+import { CommentButton } from '../user/CommentButton';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -77,6 +79,8 @@ export default function LeftSidebar() {
     { label: "Descarga", icon: "bi-download", create: (ref) => connectors.create(ref, <FileDownload />) },
     { label: "Foro", icon: "bi-chat-left-text", create: (ref) => connectors.create(ref, <ForumButton />) },
     { label: "Me Gusta", icon: "bi-heart", create: (ref) => connectors.create(ref, <LikeButton />) },
+    { label: "Retroceso", icon: "bi-arrow-left", create: (ref) => connectors.create(ref, <BackButton />) },
+    { label: "Comentarios", icon: "bi-chat-dots", create: (ref) => connectors.create(ref, <CommentButton />) },
     { label: "Columnas", icon: "bi-layout-sidebar", create: (ref) => connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>) },
     { label: "Barra Nav", icon: "bi-menu-button-wide", create: (ref) => connectors.create(ref, <Navbar />) },
     { label: "Hero Banner", icon: "bi-layout-text-window-reverse", create: (ref) => connectors.create(ref, <HeroBanner />) },

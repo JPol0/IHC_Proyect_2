@@ -78,6 +78,8 @@ import { Grid2 } from '../components/user/Grid2';
 import { Grid3 } from '../components/user/Grid3';
 import { Grid5 } from '../components/user/Grid5';
 import { GridCol } from '../components/user/GridCol';
+import { BackButton } from '../components/user/BackButton';
+import { CommentButton } from '../components/user/CommentButton';
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { useGetSectionData } from '../hooks/useGetSectionData';
@@ -470,7 +472,7 @@ function App({nameSection}) {
   return (
     <ErrorBoundary>
       <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroBanner, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, FloraPageTemplateV1, FloraPageTemplateV2, AguaPageTemplate, TribesCard, FeatureCard, FeatureGrid, Grid2, Grid3, Grid5, GridCol }}>
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroBanner, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, FloraPageTemplateV1, FloraPageTemplateV2, AguaPageTemplate, TribesCard, FeatureCard, FeatureGrid, Grid2, Grid3, Grid5, GridCol, BackButton, CommentButton }}>
           <EditorLayout
             siteName={siteName}
             siteId={siteId}
