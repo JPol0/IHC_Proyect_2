@@ -5,7 +5,7 @@ import { useNode, Element, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
-import { TribesCard } from './TribesCard';
+import { FeatureCard } from './FeatureCard';
 import { BackgroundImageContainer } from './ImageContainer';
 import { useNavigate } from 'react-router-dom';
 import { useUploadImage } from '../../hooks/useUploadImage';
@@ -366,15 +366,20 @@ export const FaunaPageTemplate = ({
                 {parsedCards.map((card, index) => (
                   <Element
                     key={card.id || index}
-                    is={TribesCard}
+                    is={FeatureCard}
                     id={`fauna-card-${card.id || index}`}
                     imageUrl={card.image || ''}
                     title={card.title || ''}
                     linkUrl={card.link || '#'}
+                    // Layout Logic: First card is large overlay
+                    variant={index === 0 ? 'overlay' : 'default'}
+                    columnSpan={index === 0 ? 2 : 1}
+                    // Adjust height for featured card
+                    height={index === 0 ? 400 : 300}
+                    
                     backgroundColor="#ffffff"
-                    titleColor="#000000"
-                    buttonColor="#000000"
-                    buttonTextColor="#000000"
+                    titleColor={index === 0 ? '#ffffff' : "#000000"} // Should overlap with variant logic but explicit safety
+                    buttonColor={index === 0 ? '#ffffff' : "#000000"} 
                   />
                 ))}
               </div>
@@ -747,9 +752,6 @@ FaunaPageTemplate.craft = {
       { id: 3, image: 'https://placehold.co/400x300', title: 'Extraña oruga con tentáculos en erupción', link: '#' },
       { id: 4, image: 'https://placehold.co/400x300', title: 'Se descubren nuevas especies cada dos días', link: '#' },
       { id: 5, image: 'https://placehold.co/400x300', title: 'rana nombrada en honor a monstruo mítico', link: '#' },
-      { id: 6, image: 'https://placehold.co/400x300', title: 'Perezosos, manatíes y otros animales salvajes rescatados del turismo en la Amazonia', link: '#' },
-      { id: 7, image: 'https://placehold.co/400x300', title: 'Misterioso animal del Amazonas visto con vida por primera vez en 80 años', link: '#' },
-      { id: 8, image: 'https://placehold.co/400x300', title: 'incendio en el amazonas para los animales salvajes', link: '#' },
     ]),
     cardsColumns: 3,
     cardsGap: 30,

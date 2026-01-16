@@ -27,6 +27,7 @@ import { NewsPageTemplate } from '../user/NewsPageTemplate';
 import { TribesPageTemplate } from '../user/TribesPageTemplate';
 import { FaunaPageTemplate } from '../user/FaunaPageTemplate';
 import { TribesCard } from '../user/TribesCard';
+import { FeatureGrid } from '../user/FeatureGrid';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -102,6 +103,7 @@ export default function LeftSidebar() {
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Image />)} icon="bi-image" label="Imagen" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Container} padding={16} background="#ffffff" canvas />)} icon="bi-square" label="Contenedor" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={Card} />)} icon="bi-card-heading" label="Tarjeta" />
+                       <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={FeatureGrid} />)} icon="bi-grid-1x2" label="Grid Destacado" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <IconButton iconName="star" iconSize={24} />)} icon="bi-star" label="Ícono" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <ChevronButton direction="left" color="#E6E3A1" />)} icon="bi-chevron-bar-left" label="Botón Nav" />
                        <ToolButton refProp={(ref) => ref && connectors.create(ref, <Element is={BackgroundImageContainer} padding={16} background="#ffffff" canvas />)} icon="bi-card-image" label="Caja Img" />
