@@ -9,8 +9,17 @@ export const FeatureCard = ({
   imageUrl = 'https://placehold.co/400x300',
   title = 'Título del Card',
   buttonText = 'LEER',
-  linkUrl = '#',
-  linkNewTab = false,
+  
+  // Navigation (mismo sistema que Navbar)
+  actionType = 'none', // 'none' | 'section' | 'external' | 'route'
+  sectionName = '',    // Para actionType: 'section'
+  externalUrl = '',    // Para actionType: 'external'
+  route = '',          // Para actionType: 'route' (puede incluir # para scroll)
+  newTab = false,      // Para links externos
+  
+  // DEPRECATED: Compatibilidad hacia atrás
+  linkUrl,             // Old prop - se convierte automáticamente
+  linkNewTab,          // Old prop - se convierte automáticamente
   
   // Layout
   variant = 'default', // 'default' | 'overlay'
@@ -39,6 +48,8 @@ export const FeatureCard = ({
   zIndex = 0,
   opacity = 1,
 }) => {
+  // Migración automática de props antiguas a nuevas (solo una vez)
+  const hasMigrated = React.useRef(false);
   const {
     id,
     connectors: { connect, drag },
@@ -47,6 +58,39 @@ export const FeatureCard = ({
   } = useNode((node) => ({
     selected: node.events.selected,
   }));
+  
+  React.useEffect(() => {
+    if (hasMigrated.current) return;
+    
+    if (linkUrl !== undefined && actionType === 'none') {
+      hasMigrated.current = true;
+      // Detectar y migrar linkUrl antiguo
+      if (linkUrl.startsWith('http')) {
+        setProp((props) => {
+          props.actionType = 'external';
+          props.externalUrl = linkUrl;
+          props.newTab = linkNewTab !== undefined ? linkNewTab : false;
+          delete props.linkUrl;
+          delete props.linkNewTab;
+        });
+      } else if (linkUrl.startsWith('#')) {
+        setProp((props) => {
+          props.actionType = 'route';
+          props.route = linkUrl;
+          delete props.linkUrl;
+          delete props.linkNewTab;
+        });
+      } else if (linkUrl && linkUrl !== '#') {
+        setProp((props) => {
+          props.actionType = 'route';
+          props.route = linkUrl;
+          delete props.linkUrl;
+          delete props.linkNewTab;
+        });
+      }
+    }
+  }, []); // Solo ejecutar una vez al montar
+
   const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node }, enabled } = useEditor((state) => ({
     enabled: state.options.enabled,
   }));
@@ -82,13 +126,42 @@ export const FeatureCard = ({
   const handleLinkClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (enabled) return;
     
-    if (linkUrl.startsWith('http')) {
-      window.open(linkUrl, linkNewTab ? '_blank' : '_self');
-    } else {
-      navigate(linkUrl);
+    // Sistema de navegación igual que Navbar (sin bloquear en modo editor)
+    if (actionType === 'section') {
+      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
+      const qs = new URLSearchParams();
+      if (site) qs.set('site', site);
+      if (sectionName) qs.set('section', sectionName);
+      const target = sectionName ? `/editor?${qs.toString()}` : '';
+      if (!target) return;
+      navigate(target);
+      return;
     }
+    
+    if (actionType === 'external') {
+      const url = (externalUrl || '').trim();
+      if (!url) return;
+      if (typeof window !== 'undefined') {
+        window.open(url, newTab ? '_blank' : '_self');
+      }
+      return;
+    }
+    
+    if (actionType === 'route') {
+      const targetRoute = (route || '').trim();
+      if (targetRoute) {
+        if (targetRoute.startsWith('#')) {
+          const el = document.querySelector(targetRoute);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        navigate(targetRoute);
+      }
+      return;
+    }
+    
+    // actionType === 'none' - no hacer nada
   };
 
   const commonStyle = {
@@ -482,14 +555,65 @@ const FeatureCardSettings = () => {
                 />
               </div>
               
-              <div>
-                <label className="form-label">Link Url</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  value={props.linkUrl || '#'}
-                  onChange={(e) => setProp((p) => (p.linkUrl = e.target.value))}
-                />
+              {/* Sistema de navegación como en Navbar */}
+              <div className="border rounded p-2" style={{ backgroundColor: 'transparent' }}>
+                <label className="form-label fw-bold mb-2">
+                  <i className="bi bi-link-45deg me-1"></i> Acción del Botón
+                </label>
+                
+                <div className="mb-2">
+                  <select
+                    className="form-select form-select-sm"
+                    value={props.actionType || 'none'}
+                    onChange={(e) => setProp((p) => (p.actionType = e.target.value))}
+                  >
+                    <option value="none">Sin acción</option>
+                    <option value="section">Ir a Sección</option>
+                    <option value="external">Link Externo</option>
+                    <option value="route">Ruta Interna</option>
+                  </select>
+                </div>
+                
+                {props.actionType === 'section' && (
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="Nombre sección (ej: foro, fauna)"
+                    value={props.sectionName || ''}
+                    onChange={(e) => setProp((p) => (p.sectionName = e.target.value))}
+                  />
+                )}
+                
+                {props.actionType === 'external' && (
+                  <div className="d-grid gap-2">
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="URL (https://...)"
+                      value={props.externalUrl || ''}
+                      onChange={(e) => setProp((p) => (p.externalUrl = e.target.value))}
+                    />
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={props.newTab !== false}
+                        onChange={(e) => setProp((p) => (p.newTab = e.target.checked))}
+                      />
+                      <label className="form-check-label small">Abrir en nueva pestaña</label>
+                    </div>
+                  </div>
+                )}
+                
+                {props.actionType === 'route' && (
+                  <div>
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="Ruta (ej: /login o #seccion)"
+                      value={props.route || ''}
+                      onChange={(e) => setProp((p) => (p.route = e.target.value))}
+                    />
+                    <small className="text-muted">Usa # para ir a una sección de la página</small>
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -584,7 +708,11 @@ FeatureCard.craft = {
     imageUrl: 'https://placehold.co/400x300',
     title: 'Título del Card',
     buttonText: 'LEER',
-    linkUrl: '#',
+    actionType: 'none',
+    sectionName: '',
+    externalUrl: '',
+    route: '',
+    newTab: false,
     variant: 'default',
     borderRadius: 8,
     imageHeight: 200,

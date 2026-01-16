@@ -10,36 +10,41 @@ export const FeatureGrid = ({
       id: 1,
       image: 'https://placehold.co/800x600',
       title: 'Carta Principal Destacada',
-      link: '#',
-      buttonText: 'LEER'
+      buttonText: 'LEER',
+      actionType: 'section',
+      sectionName: 'inicio'
     },
     {
       id: 2,
       image: 'https://placehold.co/400x300',
       title: 'Carta Secundaria 1',
-      link: '#',
-      buttonText: 'LEER'
+      buttonText: 'LEER',
+      actionType: 'section',
+      sectionName: 'fauna'
     },
     {
       id: 3,
       image: 'https://placehold.co/400x300',
       title: 'Carta Secundaria 2',
-      link: '#',
-      buttonText: 'LEER'
+      buttonText: 'LEER',
+      actionType: 'section',
+      sectionName: 'flora'
     },
     {
       id: 4,
       image: 'https://placehold.co/400x300',
       title: 'Carta Secundaria 3',
-      link: '#',
-      buttonText: 'LEER'
+      buttonText: 'LEER',
+      actionType: 'section',
+      sectionName: 'cultura'
     },
     {
       id: 5,
       image: 'https://placehold.co/400x300',
       title: 'Carta Secundaria 4',
-      link: '#',
-      buttonText: 'LEER'
+      buttonText: 'LEER',
+      actionType: 'section',
+      sectionName: 'geografia'
     }
   ]),
   columns = 3,
@@ -135,8 +140,14 @@ export const FeatureGrid = ({
           id={`grid-card-${card.id || index}`}
           imageUrl={card.image || ''}
           title={card.title || ''}
-          linkUrl={card.link || '#'}
           buttonText={card.buttonText || 'LEER'}
+          
+          // Sistema de navegación
+          actionType={card.actionType || 'none'}
+          sectionName={card.sectionName || ''}
+          externalUrl={card.externalUrl || ''}
+          route={card.route || ''}
+          newTab={card.newTab || false}
           
           // Layout Logic: First card is large overlay
           variant={index === 0 ? 'overlay' : 'default'}
@@ -318,11 +329,11 @@ FeatureGrid.craft = {
   displayName: 'Grid Destacado',
   props: {
     cards: JSON.stringify([
-        { id: 1, image: 'https://placehold.co/800x600', title: 'Carta Principal Destacada', link: '#' },
-        { id: 2, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 1', link: '#' },
-        { id: 3, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 2', link: '#' },
-        { id: 4, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 3', link: '#' },
-        { id: 5, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 4', link: '#' }
+        { id: 1, image: 'https://placehold.co/800x600', title: 'Carta Principal Destacada', buttonText: 'LEER', actionType: 'section', sectionName: 'inicio' },
+        { id: 2, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 1', buttonText: 'LEER', actionType: 'section', sectionName: 'fauna' },
+        { id: 3, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 2', buttonText: 'LEER', actionType: 'section', sectionName: 'flora' },
+        { id: 4, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 3', buttonText: 'LEER', actionType: 'section', sectionName: 'cultura' },
+        { id: 5, image: 'https://placehold.co/400x300', title: 'Carta Secundaria 4', buttonText: 'LEER', actionType: 'section', sectionName: 'geografia' }
     ]),
     columns: 3,
     gap: 15,
