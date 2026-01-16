@@ -16,6 +16,7 @@ import { FileDownload } from '../user/FileDownload';
 import { ForumButton } from '../user/ForumButton';
 import { LikeButton } from '../user/LikeButton';
 import { Navbar } from '../user/Navbar';
+import { HeroBanner } from '../user/HeroBanner';
 import { HeroSection } from '../user/HeroSection';
 import { NewsSection } from '../user/NewsSection';
 import { CategoryGrid } from '../user/CategoryGrid';
@@ -78,6 +79,7 @@ export default function LeftSidebar() {
     { label: "Me Gusta", icon: "bi-heart", create: (ref) => connectors.create(ref, <LikeButton />) },
     { label: "Columnas", icon: "bi-layout-sidebar", create: (ref) => connectors.create(ref, <Element is={Container} padding={16} background="#eeeeee" canvas ><Text text="Column 1" /><Text text="Column 2" /></Element>) },
     { label: "Barra Nav", icon: "bi-menu-button-wide", create: (ref) => connectors.create(ref, <Navbar />) },
+    { label: "Hero Banner", icon: "bi-layout-text-window-reverse", create: (ref) => connectors.create(ref, <HeroBanner />) },
     { label: "Grid 2 Col", icon: "bi-grid", create: (ref) => connectors.create(ref, 
       <Element is={Grid2} canvas>
         <Element is={TribesCard} 
