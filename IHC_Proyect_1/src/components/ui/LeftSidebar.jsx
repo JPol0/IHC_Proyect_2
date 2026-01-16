@@ -32,6 +32,7 @@ import { TribesCard } from '../user/TribesCard';
 import { FeatureGrid } from '../user/FeatureGrid';
 import { Grid2 } from '../user/Grid2';
 import { Grid3 } from '../user/Grid3';
+import { Grid5 } from '../user/Grid5';
 import { GridCol } from '../user/GridCol';
 import { FeatureCard } from '../user/FeatureCard';
 
@@ -117,6 +118,49 @@ export default function LeftSidebar() {
              buttonTextColor="#000000"
              title="Idiomas y Comunicacion"
              imageUrl="https://placehold.co/400x300"
+        />
+      </Element>
+    ) },
+    { label: "Grid 5 (3+2)", icon: "bi-columns-gap", create: (ref) => connectors.create(ref, 
+      <Element is={Grid5} canvas>
+        {/* Fila 1: 3 tarjetas overlay, cada una ocupa 2 columnas de 6 */}
+        <Element is={FeatureCard} 
+            variant="overlay"
+            columnSpan={2}
+            title="Ubicacion Geografica"
+            imageUrl="https://placehold.co/400x300"
+            height={200}
+        />
+        <Element is={FeatureCard} 
+            variant="overlay"
+            columnSpan={2}
+            title="Organizacion Social"
+            imageUrl="https://placehold.co/400x300"
+            height={200}
+        />
+        <Element is={FeatureCard} 
+            variant="overlay"
+            columnSpan={2}
+            title="Idiomas y Comunicacion"
+            imageUrl="https://placehold.co/400x300"
+            height={200}
+        />
+        {/* Fila 2: 2 tarjetas horizontales, cada una ocupa 3 columnas de 6 */}
+        <Element is={FeatureCard} 
+            variant="horizontal"
+            columnSpan={3}
+            title="Musica y Danza"
+            imageUrl="https://placehold.co/400x300"
+            backgroundColor="#000000"
+            titleColor="#ffffff"
+        />
+        <Element is={FeatureCard} 
+            variant="horizontal"
+            columnSpan={3}
+            title="Gastronomia"
+            imageUrl="https://placehold.co/400x300"
+            backgroundColor="#000000"
+            titleColor="#ffffff"
         />
       </Element>
     ) },
