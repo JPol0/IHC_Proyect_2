@@ -178,6 +178,68 @@ export const FeatureCard = ({
     );
   }
 
+  if (variant === 'horizontal') {
+      return (
+        <div
+            ref={(ref) => connect(drag(ref))}
+            style={{
+                ...commonStyle,
+                flexDirection: 'row',
+                backgroundColor: backgroundColor,
+                height: 'auto', 
+                minHeight: '150px',
+                overflow: 'hidden' // Ensure image doesn't overflow
+            }}
+        >
+            {/* Image Left */}
+            <div style={{
+                width: '40%', // Fixed width percentage for now
+                position: 'relative',
+                minHeight: '100%',
+                flexShrink: 0,
+            }}>
+                <img
+                    src={imageUrl}
+                    alt={title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }}
+                />
+            </div>
+            {/* Content Right */}
+            <div style={{
+                flex: 1,
+                padding: `${padding}px`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '12px'
+            }}>
+                 {renderContent(false)}
+            </div>
+            
+             {/* Floating Delete Button (Only when selected) */}
+             {selected && enabled && (
+                <div style={{
+                    position: 'absolute',
+                    top: '-15px',
+                    right: '-10px',
+                    zIndex: 100,
+                    backgroundColor: 'white',
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                    cursor: 'pointer'
+                }}
+                 onClick={(e) => {
+                    e.stopPropagation();
+                    // Simple delete placeholder if needed, usually craft handles this via UI
+                 }}
+                >
+                     {/* Placeholder handle */}
+                </div>
+            )}
+        </div>
+      );
+  }
+
   // Default Variant (Image Top, Text Bottom)
   return (
     <div
@@ -248,6 +310,7 @@ const FeatureCardSettings = () => {
                 >
                   <option value="default">Estándar (Imagen Arriba)</option>
                   <option value="overlay">Overlay (Texto sobre Imagen)</option>
+                  <option value="horizontal">Horizontal (Lista)</option>
                 </select>
               </div>
               
