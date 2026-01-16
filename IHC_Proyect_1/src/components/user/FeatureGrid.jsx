@@ -280,9 +280,9 @@ const FeatureGridSettings = () => {
                 <input
                   type="range"
                   className="form-range"
-                  min="0"
-                  max="1"
-                  step="0.1"
+                  min={0}
+                  max={1}
+                  step={0.05}
                   value={props.opacity || 1}
                   onChange={(e) => setProp((p) => (p.opacity = Number(e.target.value)))}
                 />
