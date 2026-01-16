@@ -6,6 +6,17 @@
         "/^cd IHC_Proyect_1; cmd /c \"npm run build:renderer\"$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "npm run dev": true,
+        "npm.cmd": true,
+        "Set-Location": true,
+        "/^cmd /c \"npm run dev\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd IHC_Proyect_1; cmd /c \"npm run dev\"$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

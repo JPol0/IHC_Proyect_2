@@ -18,6 +18,11 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
   const [isExporting, setIsExporting] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [showSaveAsComponent, setShowSaveAsComponent] = useState(false);
+  
+  // New States for Full Site Export
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [exportWithImages, setExportWithImages] = useState(false);
+
   const sectionName = nameSection || '';
   const handleClear = () => {
     if (!confirm('¿Limpiar el lienzo? Esta acción borrará el contenido.')) return;
@@ -164,7 +169,17 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
 
         // Asegurar que props exista
         if (!node.data.props || typeof node.data.props !== 'object') {
-          node.data.props = {};
+          // Intentar recuperar props del nivel superior si existen
+          if (node.props && typeof node.props === 'object') {
+            console.log(`[normalizeState] Recuperando props del nivel superior para nodo ${nodeId}`);
+            node.data.props = { ...node.props }; // Copia superficial
+          } else {
+            node.data.props = {};
+          }
+        } else if (Object.keys(node.data.props).length === 0 && node.props && typeof node.props === 'object' && Object.keys(node.props).length > 0) {
+           // Si data.props está vacío pero node.props tiene cosas, mezclar
+           console.log(`[normalizeState] Mezclando props del nivel superior para nodo ${nodeId} (data.props estaba vacío)`);
+           node.data.props = { ...node.props };
         }
 
         // Asegurar que custom exista
@@ -445,223 +460,385 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     }
   };
 
-  const handleExport = async () => {
+  const performExport = async (sectionsToExport = []) => {
     try {
-      if (!confirm('Crear y descargar ZIP?')) return;
       setIsExporting(true);
-      const state = query.serialize();
       
-      // Normalizar y validar el estado antes de exportar
-      const normalizedState = normalizeState(state);
-      
-      const indexRes = await fetch('/index.html');
-      if (!indexRes.ok) {
-        throw new Error('No se pudo cargar index.html');
+      // 1. Cargar Assets Estáticos
+      const assets = {};
+      try {
+        const indexRes = await fetch('/index.html'); assets.indexHtml = await indexRes.text();
+        const cssRes = await fetch('/craft-renderer-bundle.css'); assets.css = await cssRes.text();
+        const jsRes = await fetch('/craft-renderer-bundle.js'); assets.js = await jsRes.text();
+      } catch(e) {
+        throw new Error('Error cargando assets base (css/js). Ejecuta "npm run build:renderer".');
       }
-      const indexText = await indexRes.text();
-      
-      const cssRes = await fetch('/craft-renderer-bundle.css');
-      if (!cssRes.ok) {
-        throw new Error('No se pudo cargar craft-renderer-bundle.css. Asegúrate de ejecutar "npm run build:renderer" primero.');
-      }
-      const cssText = await cssRes.text();
-      
-      const jsRes = await fetch('/craft-renderer-bundle.js');
-      if (!jsRes.ok) {
-        throw new Error('No se pudo cargar craft-renderer-bundle.js. Asegúrate de ejecutar "npm run build:renderer" primero.');
-      }
-      const jsText = await jsRes.text();
 
       const zip = new JSZip();
+      zip.file('craft-renderer-bundle.css', assets.css);
+      zip.file('craft-renderer-bundle.js', assets.js);
       
-      // Parsear el estado normalizado
-      let stateObj = JSON.parse(normalizedState);
-      
-      // VERIFICACIÓN FINAL EXHAUSTIVA antes de exportar
-      const verifyStateBeforeExport = (obj) => {
-        let issues = [];
-        
-        // Verificar ROOT
-        if (!obj.ROOT) {
-          issues.push('ROOT no existe');
-        } else if (!obj.ROOT.data?.type?.resolvedName) {
-          issues.push('ROOT no tiene data.type.resolvedName');
-          obj.ROOT.data = obj.ROOT.data || {};
-          obj.ROOT.data.type = obj.ROOT.data.type || {};
-          obj.ROOT.data.type.resolvedName = 'BackgroundImageContainer';
+      const assetsFolder = zip.folder('assets');
+      const processedUrls = new Map(); // url -> localPath
+
+      // Variables de control de errores
+      const failedImages = [];
+      const successImages = [];
+
+      const normalizePossibleUrl = (raw) => {
+        if (!raw || typeof raw !== 'string') return null;
+        let url = raw.trim();
+
+        // extraer url("...") o url('...')
+        const m = url.match(/url\s*\(\s*(['"]?)(.*?)\1\s*\)/i);
+        if (m && m[2]) url = m[2].trim();
+
+        // convertir //example.com/image.png -> https://example.com/image.png
+        if (url.startsWith('//')) {
+          url = `${window.location.protocol}${url}`;
         }
-        
-        // Verificar todos los nodos
-        if (obj.nodes && typeof obj.nodes === 'object') {
-          Object.keys(obj.nodes).forEach(nodeId => {
-            const node = obj.nodes[nodeId];
-            if (!node?.data?.type?.resolvedName) {
-              issues.push(`Nodo ${nodeId} no tiene resolvedName`);
-              if (!node.data) node.data = {};
-              if (!node.data.type) node.data.type = {};
-              node.data.type.resolvedName = 'Unknown';
-            }
-          });
+
+        // resolver rutas relativas
+        if (url.startsWith('/')) {
+          try { url = new URL(url, window.location.origin).toString(); } catch {}
         }
-        
-        if (issues.length > 0) {
-          console.error('[Export] Problemas encontrados en el estado:', issues);
-          console.log('[Export] Estado corregido antes de exportar');
-        } else {
-          console.log('[Export] Estado verificado: todos los nodos tienen resolvedName');
+
+        return url;
+      };
+
+      const tryDownloadFromSupabase = async (absoluteUrl) => {
+        try {
+          if (!absoluteUrl || typeof absoluteUrl !== 'string') return null;
+          const u = new URL(absoluteUrl);
+          const path = u.pathname || '';
+
+          // formatos comunes:
+          // /storage/v1/object/public/<bucket>/<filePath>
+          // /storage/v1/object/sign/<bucket>/<filePath>
+          const m = path.match(/\/storage\/v1\/object\/(public|sign)\/([^/]+)\/(.+)$/i);
+          if (!m) return null;
+          const bucket = decodeURIComponent(m[2]);
+          const filePath = decodeURIComponent(m[3]);
+
+          const { data, error } = await supabase.storage.from(bucket).download(filePath);
+          if (error) throw error;
+          if (!data) throw new Error('download() returned empty');
+          return data; // Blob
+        } catch (e) {
+          console.warn('[Export] Supabase download fallback failed:', e);
+          return null;
         }
       };
-      
-      verifyStateBeforeExport(stateObj);
-      
-      // ÚLTIMA VERIFICACIÓN: Asegurar que el estado tiene la estructura EXACTA que Craft.js espera
-      // Craft.js espera que al deserializar, cada nodo tenga:
-      // - data.type.resolvedName (string, obligatorio)
-      // - data.props (object, obligatorio)
-      // - custom (object, obligatorio)
-      // - hidden (boolean, obligatorio)
-      // - linkedNodes (object, obligatorio)
-      // - nodes (array, no objeto, si existe)
-      const ensureCraftJsStructure = (obj) => {
-        // Verificar y corregir ROOT
-        if (obj.ROOT) {
-          if (!obj.ROOT.data?.type?.resolvedName) {
-            obj.ROOT.data = obj.ROOT.data || {};
-            obj.ROOT.data.type = obj.ROOT.data.type || {};
-            obj.ROOT.data.type.resolvedName = 'BackgroundImageContainer';
-          }
-          if (!Array.isArray(obj.ROOT.nodes)) {
-            obj.ROOT.nodes = obj.ROOT.nodes ? Object.keys(obj.ROOT.nodes) : [];
-          }
-        }
+
+      // Helper para descargar imagen y actualizar JSON
+      const processImages = async (node) => {
+        if (!node || !node.data) return;
         
-        // Verificar y corregir todos los nodos
-        if (obj.nodes && typeof obj.nodes === 'object') {
-          Object.keys(obj.nodes).forEach(nodeId => {
-            const node = obj.nodes[nodeId];
-            if (!node) return;
-            
-            // Asegurar estructura mínima
-            if (!node.data) node.data = {};
-            if (!node.data.type) node.data.type = {};
-            if (!node.data.type.resolvedName || typeof node.data.type.resolvedName !== 'string') {
-              node.data.type.resolvedName = 'Unknown';
+        // Log para ver qué props estamos procesando y de dónde vienen
+        const propsSource = Object.keys(node.data.props || {}).length > 0 ? 'data.props' : (node.props && Object.keys(node.props).length > 0 ? 'node.props' : 'NONE');
+        const targetProps = propsSource === 'node.props' ? node.props : node.data.props;
+        
+        console.log(`[Export Debug] Procesando nodo: ${node.data.type?.resolvedName || 'Unknown'} (${node.id || '?'}). Fuente Props: ${propsSource}. Keys: ${Object.keys(targetProps || {}).join(', ')}`);
+
+        if (!targetProps) return;
+
+        const downloadAndGetPath = async (url) => {
+           // Normalizar URL para evitar duplicados
+           const cleanUrl = url.trim();
+           let localPath = processedUrls.get(cleanUrl);
+           if (localPath) return localPath;
+
+           console.log(`[Export] Intentando descargar: ${cleanUrl}`);
+
+           try {
+              let blob;
+              let ext = 'png';
+
+              const isData = cleanUrl.startsWith('data:image');
+
+              if (isData) {
+                const arr = cleanUrl.split(',');
+                const mime = arr[0]?.match(/:(.*?);/)?.[1] || 'image/png';
+                const bstr = atob(arr[1] || '');
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) u8arr[n] = bstr.charCodeAt(n);
+                blob = new Blob([u8arr], { type: mime });
+                ext = (mime.split('/')[1] || 'png').split('+')[0];
+              } else {
+                // 1) intentar fetch directo
+                try {
+                  // Intentamos primero sin credenciales para evitar preflight complex
+                  const res = await fetch(cleanUrl, { mode: 'cors', credentials: 'omit', redirect: 'follow' });
+                  if (!res.ok) throw new Error(`Status ${res.status}`);
+                  blob = await res.blob();
+                } catch (fetchErr) {
+                  console.warn(`[Export] Fetch directo falló para ${cleanUrl}, intentando Supabase fallback...`, fetchErr);
+                  // 2) fallback para Supabase Storage
+                  const sbBlob = await tryDownloadFromSupabase(cleanUrl);
+                  if (!sbBlob) throw fetchErr; // Si falla también Supabase, lanzamos el error original
+                  blob = sbBlob;
+                }
+
+                const mime = blob.type || 'image/png';
+                ext = (mime.split('/')[1] || 'png').split('+')[0];
+                // Ajuste de extensión si la URL tiene una explícita
+                const lower = cleanUrl.toLowerCase();
+                if (lower.includes('.svg')) ext = 'svg';
+                else if (lower.includes('.jpeg') || lower.includes('.jpg')) ext = 'jpg';
+                else if (lower.includes('.png')) ext = 'png';
+                else if (lower.includes('.webp')) ext = 'webp';
+              }
+
+              const fname = `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
+              assetsFolder.file(fname, blob);
+              localPath = `assets/${fname}`;
+              processedUrls.set(cleanUrl, localPath);
+              successImages.push(cleanUrl);
+              console.log(`[Export] Éxito: ${cleanUrl} -> ${localPath}`);
+              return localPath;
+            } catch (e) {
+              console.warn(`[Export] CRITICAL FAIL: ${cleanUrl}`, e);
+              failedImages.push({ url: cleanUrl, error: e?.message || String(e) });
+              return null; 
             }
-            if (!node.data.props || typeof node.data.props !== 'object') {
-              node.data.props = {};
+        };
+
+        const processObject = async (obj, path = '') => {
+            if (!obj || typeof obj !== 'object') return;
+
+            for (const key of Object.keys(obj)) {
+                
+                // Debug log de cada llave
+                // console.log(`[Export Debug] Revisando key: ${path}${key} =`, obj[key]);
+
+                // Recursión para objetos anidados (ej. style, variants, etc)
+                if (obj[key] && typeof obj[key] === 'object' && !React.isValidElement(obj[key])) {
+                    await processObject(obj[key], path + key + '.');
+                    continue;
+                }
+
+                // Verificar si es una propiedad de imagen
+                // Agregamos 'background' y variantes camelCase/kebabCase comunes
+                const isImageKey = ['src', 'backgroundImage', 'url', 'imageUrl', 'cover', 'image', 'background', 'poster'].includes(key);
+                
+                // También verificamos si el VALOR parece una URL de imagen, independientemente de la key
+                const val = obj[key];
+                const isString = typeof val === 'string';
+                
+                // Si la key es sospechosa O el valor parece una URL de imagen conocida
+                let shouldProcess = isImageKey && isString;
+                
+                if (!shouldProcess && isString) {
+                    // Heurística adicional: si el valor termina en extensión de imagen o empieza con http y contiene /images/ o similar
+                    if (val.match(/\.(jpeg|jpg|png|gif|webp|svg)(\?.*)?$/i) || val.match(/^https?:\/\/.*(images|img|assets).*/i)) {
+                        shouldProcess = true;
+                    }
+                    // Si es data:image
+                    if (val.startsWith('data:image')) shouldProcess = true;
+                }
+
+                if (!shouldProcess) continue;
+
+                const raw = val;
+                const url = normalizePossibleUrl(raw);
+                if (!url) continue;
+
+                const isHttp = url.startsWith('http://') || url.startsWith('https://');
+                const isBlob = url.startsWith('blob:');
+                const isData = url.startsWith('data:image');
+
+                console.log(`[Export Debug] Candidato encontrado en ${path}${key}: ${url.substring(0, 50)}...`, {isHttp, isBlob, isData, exportWithImages});
+
+                if (!exportWithImages || !(isHttp || isBlob || isData)) {
+                     // console.log(`[Export Debug] SALTADO.`);
+                     continue;
+                }
+
+                const localPath = await downloadAndGetPath(url);
+                
+                if (localPath) {
+                    // Si estaba en formato url("..."), reponerlo
+                    if (raw.trim().match(/^url\s*\(/i)) {
+                         obj[key] = `url("${localPath}")`;
+                    } else {
+                         obj[key] = localPath;
+                    }
+                }
             }
-            if (!node.custom || typeof node.custom !== 'object') {
-              node.custom = {};
-            }
-            if (typeof node.hidden !== 'boolean') {
-              node.hidden = false;
-            }
-            if (!node.linkedNodes || typeof node.linkedNodes !== 'object') {
-              node.linkedNodes = {};
-            }
-            // Asegurar que nodes sea array
-            if (node.nodes !== undefined && node.nodes !== null && !Array.isArray(node.nodes)) {
-              node.nodes = typeof node.nodes === 'object' ? Object.keys(node.nodes) : [];
-            }
-          });
+        };
+
+        await processObject(targetProps, 'props.');
+        
+        // También procesar 'style' si existe en la raíz de data (a veces pasa en implementaciones custom)
+        if (node.data.style) {
+             await processObject(node.data.style, 'style.');
+        }
+
+        // Si procesamos node.props, asegurarnos de sincronizar con data.props por si acaso
+        if (propsSource === 'node.props' && node.data) {
+            node.data.props = targetProps;
         }
       };
-      
-      ensureCraftJsStructure(stateObj);
-      
-      // Crear HTML directamente como string
-      const htmlContent = `<!DOCTYPE html>
+
+
+      // Helper para procesar un estado entero
+      const processStateForBundle = async (stateStr, sectionName, slug) => {
+          // Normalizar
+          const normalized = normalizeState(stateStr);
+          const stateObj = JSON.parse(normalized);
+          
+          // Procesar Nodos para Imágenes (Offline Mode)
+          const allNodes = [stateObj.ROOT, ...Object.values(stateObj.nodes || {})];
+          for (const node of allNodes) {
+             await processImages(node); // Modifica stateObj in-place
+          }
+          
+          return JSON.stringify(stateObj);
+      };
+
+      if (sectionsToExport.length > 0) {
+          // ============================================
+          // Exportación SPA (Single Page Application)
+          // ============================================
+          const routes = {};
+          const sectionsList = [];
+          let startRoute = '/';
+
+          // Encontrar sección 'Inicio' para definir entry point
+          const inicioSection = sectionsToExport.find(s => s.nameSeccion && s.nameSeccion.toLowerCase() === 'inicio');
+          const firstSection = sectionsToExport[0];
+          const entrySection = inicioSection || firstSection;
+
+          for (const sec of sectionsToExport) {
+              const rawName = sec.nameSeccion || 'Untitled';
+              // Generar slug URL-friendly
+              const slug = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page-' + sec.id;
+              
+              // Procesar JSON de la sección (imágenes, normalización)
+              const processedJson = await processStateForBundle(sec.json, rawName, slug);
+              
+              // Guardar en mapa de rutas
+              routes[slug] = processedJson;
+              
+              // Guardar metadatos para navegación por nombre
+              sectionsList.push({ name: rawName, slug: slug });
+          }
+
+          if (entrySection) {
+              const startName = entrySection.nameSeccion || 'Untitled';
+              const startSlug = startName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page-' + entrySection.id;
+              startRoute = '/' + startSlug;
+          }
+
+          // Generar index.html ÚNICO con el bundle de datos
+          const htmlContent = `<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Página Exportada</title>
-  <link rel="stylesheet" href="craft-renderer-bundle.css" />
-</head>
-<body>
-  <div id="root"></div>
-  <script>
-    window.global = window.global || window;
-    window.process = window.process || { env: { NODE_ENV: 'production' } };
-    try {
-      window.__CRAFT_PAGE_STATE__ = ${JSON.stringify(stateObj)};
-      console.log('[Export HTML] Estado asignado correctamente');
-    } catch(e) {
-      console.error('[Export HTML] Error al asignar el estado:', e);
-      window.__CRAFT_PAGE_STATE__ = null;
-    }
-  </script>
-  <script src="craft-renderer-bundle.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${siteSlug || 'Sitio Exportado'}</title>
+    <link rel="stylesheet" href="craft-renderer-bundle.css" />
+    <script>
+      // Configuración de rutas SPA
+      window.process = { env: { NODE_ENV: 'production' } };
+      window.__CRAFT_ROUTES__ = ${JSON.stringify(routes)};
+      window.__CRAFT_SECTIONS__ = ${JSON.stringify(sectionsList)};
+      window.__CRAFT_START_ROUTE__ = "${startRoute}";
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="craft-renderer-bundle.js"></script>
+  </body>
 </html>`;
 
-      // Agregar TODOS los archivos al ZIP en la raíz (sin subcarpetas)
-      // IMPORTANTE: Usar rutas sin barras para asegurar que estén en la raíz
-      zip.file('index.html', htmlContent);
-      zip.file('craft-renderer-bundle.css', cssText);
-      zip.file('craft-renderer-bundle.js', jsText);
-      
-      console.log('[Export] Archivos agregados al ZIP:');
-      console.log('  - index.html: ' + htmlContent.length + ' bytes');
-      console.log('  - craft-renderer-bundle.css: ' + cssText.length + ' bytes');
-      console.log('  - craft-renderer-bundle.js: ' + jsText.length + ' bytes');
-      
-      // Verificar que los archivos estén en el ZIP usando forEach
-      const zipFiles = [];
-      zip.forEach((relativePath, file) => {
-        if (!file.dir) {
-          zipFiles.push(relativePath);
-        }
-      });
-      console.log('[Export] Archivos en ZIP (verificado con forEach):', zipFiles);
-      
-      // Verificar que todos los archivos necesarios estén presentes
-      const requiredFiles = ['index.html', 'craft-renderer-bundle.css', 'craft-renderer-bundle.js'];
-      const missingFiles = requiredFiles.filter(file => !zipFiles.includes(file));
-      if (missingFiles.length > 0) {
-        console.error('[Export] FALTAN ARCHIVOS:', missingFiles);
-        throw new Error('Faltan archivos en el ZIP: ' + missingFiles.join(', '));
+          zip.file('index.html', htmlContent);
+
+      } else {
+          // Exportación SINGLE PAGE (Legacy / Fallback)
+          const currentState = query.serialize();
+          // Normalizar
+          const normalized = normalizeState(currentState);
+          let stateObj = JSON.parse(normalized);
+          
+          // Procesar imágenes
+          const allNodes = [stateObj.ROOT, ...Object.values(stateObj.nodes || {})];
+          for (const node of allNodes) {
+             await processImages(node);
+          }
+
+          const htmlContent = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Export</title>
+    <link rel="stylesheet" href="craft-renderer-bundle.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.global = window.global || window;
+      window.process = { env: { NODE_ENV: 'production' } };
+      try { window.__CRAFT_PAGE_STATE__ = ${JSON.stringify(stateObj)}; } catch(e) {}
+    </script>
+    <script src="craft-renderer-bundle.js"></script>
+  </body>
+</html>`;
+        zip.file('index.html', htmlContent);
       }
-      
-      console.log('[Export] Todos los archivos requeridos están presentes en el ZIP');
+
 
       const content = await zip.generateAsync({ type: 'blob' });
-      console.log('[Export] ZIP generado exitosamente: ' + (content.size / 1024).toFixed(2) + ' KB');
-      
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'website-export.zip';
+      a.download = `site_export_${Date.now()}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       
-      // Mostrar instrucciones
-      console.log('[Export] ✅ ZIP exportado exitosamente!');
-      console.log('[Export] 📦 Tamaño del ZIP: ' + (content.size / 1024).toFixed(2) + ' KB');
-      console.log('[Export] 📁 Archivos incluidos:', zipFiles);
+      setShowExportOptions(false);
       
-      alert('✅ ZIP exportado exitosamente!\n\n' +
-            '📦 El ZIP contiene:\n' +
-            '  • index.html\n' +
-            '  • craft-renderer-bundle.css\n' +
-            '  • craft-renderer-bundle.js\n\n' +
-            '📂 Para usar el sitio:\n' +
-            '1. Extrae TODO el contenido del ZIP a una carpeta\n' +
-            '2. IMPORTANTE: Extrae directamente, NO en una subcarpeta\n' +
-            '3. Abre index.html con doble clic\n\n' +
-            '⚠️ Si la página está en blanco:\n' +
-            '• Verifica en la consola (F12) si hay errores\n' +
-            '• Asegúrate de que los 3 archivos estén en la misma carpeta');
+      let msg = '✅ ZIP exportado exitosamente!';
+      if (failedImages.length > 0) {
+          msg += `\n\n⚠️ ${failedImages.length} imágenes no se pudieron descargar (quedaron como enlaces externos) por restricciones de seguridad (CORS).`;
+          console.table(failedImages);
+      }
+      alert(msg);
 
+    } catch (e) {
+      console.error(e);
+      alert('No se pudo exportar el ZIP: ' + e.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleFullExportClick = async () => {
+     try {
+         setIsExporting(true);
+         const { data, error } = await supabase.from('Secciones').select('*').eq('site_id', siteId);
+         if (error) throw error;
+         if (!data || data.length === 0) throw new Error("No hay secciones en este sitio.");
+         await performExport(data);
      } catch(e) {
-         console.error('Error al exportar:', e);
-         alert('No se pudo exportar el ZIP: ' + (e.message || e));
-     } finally {
+         alert("Error obteniendo secciones: " + e.message);
          setIsExporting(false);
      }
   };
+
+  const handleExport = () => {
+    if (siteId) {
+      setShowExportOptions(true);
+    } else {
+      if (confirm('¿Crear y descargar ZIP de esta sección solamente?')) {
+        performExport([]);
+      }
+    }
+  };
+
 
   const handleImport = () => { setShowImport(true); };
   const performImport = () => {
@@ -771,6 +948,45 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
             </ul>
         </div>
       </div>
+
+
+      {showExportOptions && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 9999, background: 'rgba(0,0,0,0.5)' }}>
+            <div className="bg-white p-4 rounded shadow" style={{ width: '500px' }}>
+                <h5 className="mb-3">Exportar Sitio Web</h5>
+                <p className="small text-secondary mb-3">
+                  Se exportarán todas las secciones asociadas al sitio.
+                </p>
+                
+                <div className="alert alert-info py-2 small mb-3">
+                  <i className="bi bi-info-circle me-2"></i>
+                  La sección llamada <strong>"Inicio"</strong> se usará como página principal (index.html).
+                </div>
+
+                <div className="form-check mb-4">
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="chkExportImages"
+                    checked={exportWithImages}
+                    onChange={(e) => setExportWithImages(e.target.checked)}
+                  />
+                  <label className="form-check-label small" htmlFor="chkExportImages">
+                    Descargar imágenes y recursos (Modo Offline) <br/>
+                    <span className="text-muted" style={{fontSize:'0.75rem'}}>Si se desactiva, las imágenes seguirán cargándose desde internet.</span>
+                  </label>
+                </div>
+                
+                <div className="d-flex justify-content-end gap-2">
+                    <button className="btn btn-secondary btn-sm" onClick={() => setShowExportOptions(false)}>Cancelar</button>
+                    <button className="btn btn-primary btn-sm" onClick={handleFullExportClick} disabled={isExporting}>
+                        {isExporting ? <span className="spinner-border spinner-border-sm me-2"/> : <i className="bi bi-file-earmark-zip me-2"/>}
+                        {isExporting ? 'Exportando...' : 'Exportar Sitio Completo'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
 
       {showImport && (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 9999, background: 'rgba(0,0,0,0.5)' }}>
