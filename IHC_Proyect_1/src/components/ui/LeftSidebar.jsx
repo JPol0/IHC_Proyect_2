@@ -26,6 +26,9 @@ import { NewsArticle } from '../user/NewsArticle';
 import { NewsPageTemplate } from '../user/NewsPageTemplate';
 import { TribesPageTemplate } from '../user/TribesPageTemplate';
 import { FaunaPageTemplate } from '../user/FaunaPageTemplate';
+import { FloraPageTemplateV1 } from '../user/FloraPageTemplateV1';
+import { FloraPageTemplateV2 } from '../user/FloraPageTemplateV2';
+import { AguaPageTemplate } from '../user/AguaPageTemplate';
 import { TribesCard } from '../user/TribesCard';
 import { FeatureGrid } from '../user/FeatureGrid';
 
@@ -259,6 +262,33 @@ export default function LeftSidebar() {
                          }} 
                          icon="bi-tree" 
                          label="Página de Fauna Completa" 
+                       />
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             connectors.create(ref, <Element is={FloraPageTemplateV1} />);
+                           }
+                         }} 
+                         icon="bi-tree-fill" 
+                         label="Página de Flora V1 (Card Grande)" 
+                       />
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             connectors.create(ref, <Element is={FloraPageTemplateV2} />);
+                           }
+                         }} 
+                         icon="bi-tree-fill" 
+                         label="Página de Flora V2 (Grid Variado)" 
+                       />
+                       <ToolButton 
+                         refProp={(ref) => {
+                           if (ref) {
+                             connectors.create(ref, <Element is={AguaPageTemplate} />);
+                           }
+                         }} 
+                         icon="bi-droplet-fill" 
+                         label="Página de Agua Completa" 
                        />
                        
                        {/* Componentes Predefinidos Home */}

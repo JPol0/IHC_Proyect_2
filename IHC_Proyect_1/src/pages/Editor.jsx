@@ -67,6 +67,9 @@ import { NewsArticle } from '../components/user/NewsArticle';
 import { NewsPageTemplate } from '../components/user/NewsPageTemplate';
 import { TribesPageTemplate } from '../components/user/TribesPageTemplate';
 import { FaunaPageTemplate } from '../components/user/FaunaPageTemplate';
+import { FloraPageTemplateV1 } from '../components/user/FloraPageTemplateV1';
+import { FloraPageTemplateV2 } from '../components/user/FloraPageTemplateV2';
+import { AguaPageTemplate } from '../components/user/AguaPageTemplate';
 import { TribesCard } from '../components/user/TribesCard';
 import { FeatureCard } from '../components/user/FeatureCard';
 import { FeatureGrid } from '../components/user/FeatureGrid';
@@ -463,7 +466,7 @@ function App({nameSection}) {
   return (
     <ErrorBoundary>
       <div className="vh-100 d-flex flex-column bg-light overflow-hidden">
-        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, TribesCard, FeatureCard, FeatureGrid }}>
+        <Editor resolver={{ Card, Button, Text, Image, Container, CardTop, CardBottom, BackgroundImageContainer, ChevronButton, IconButton, FileDownload, ForumButton, LikeButton, Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto, ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate, TribesPageTemplate, FaunaPageTemplate, FloraPageTemplateV1, FloraPageTemplateV2, AguaPageTemplate, TribesCard, FeatureCard, FeatureGrid }}>
           <EditorLayout
             siteName={siteName}
             siteId={siteId}
