@@ -39,6 +39,7 @@ import { FeatureCard } from './components/user/FeatureCard';
 import { FeatureGrid } from './components/user/FeatureGrid';
 import { Grid2 } from './components/user/Grid2';
 import { Grid3 } from './components/user/Grid3';
+import { Grid5 } from './components/user/Grid5';
 import { GridCol } from './components/user/GridCol';
 import { Rectangle } from './components/user/Rectangle';
 
@@ -84,6 +85,7 @@ const resolver = {
   FeatureGrid,
   Grid2,
   Grid3,
+  Grid5,
   GridCol,
   Rectangle,
 };

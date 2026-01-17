@@ -128,7 +128,7 @@ export const NewsSection = ({
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '2fr 1fr',
-        gap: `${gap}px`,
+        gap: `${Number(gap) || 24}px`,
         width: '100%'
       }}>
         {/* Large Card */}
@@ -186,7 +186,7 @@ export const NewsSection = ({
         )}
 
         {/* Small Cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: `${gap}px` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: `${Number(gap) || 24}px` }}>
           {smallItems.map((item, index) => (
             <div
               key={item.id || index}
