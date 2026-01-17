@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useNavigate } from 'react-router-dom';
 import { SettingsTabs } from "../ui/SettingsTabs";
+import { navigateToSection, isExportedSite } from '../../utils/navigation';
 
 export const ChevronButton = ({
   to,
@@ -36,14 +37,13 @@ export const ChevronButton = ({
   const handleClick = (e) => {
     e.preventDefault();
     let target = to;
+    
+    // Si hay sectionName, usar navegación de sección
     if (!target && sectionName) {
-      // Preservar el sitio actual
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      qs.set('section', sectionName);
-      target = `/editor?${qs.toString()}`;
+      navigateToSection(navigate, sectionName);
+      return;
     }
+    
     if (!target) return;
 
     if (typeof target === 'string' && target.startsWith('#')) {

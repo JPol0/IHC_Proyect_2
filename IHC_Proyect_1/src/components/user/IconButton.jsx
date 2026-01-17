@@ -3,6 +3,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import { useNavigate } from 'react-router-dom';
 import IconPicker from '../ui/IconPicker';
 import { SettingsTabs } from "../ui/SettingsTabs";
+import { navigateToSection } from '../../utils/navigation';
 
 export const IconButton = ({
   iconName = 'star',
@@ -67,12 +68,8 @@ export const IconButton = ({
       // Navegación interna usando el router (funciona con HashRouter exportado)
       navigate(to);
     } else if (actionType === 'section' && sectionName) {
-      // Preservar el sitio actual y navegar con router
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      qs.set('section', sectionName);
-      navigate(`/editor?${qs.toString()}`);
+      // Usar helper que detecta si estamos en sitio exportado o editor
+      navigateToSection(navigate, sectionName);
     } else if (actionType === 'external' && externalUrl) {
       if (externalNewTab) {
         window.open(externalUrl, '_blank');

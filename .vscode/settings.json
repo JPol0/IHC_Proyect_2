@@ -25,6 +25,15 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "Set-ExecutionPolicy": true
+        "Set-ExecutionPolicy": true,
+        "npm run build:viewer": true,
+        "/^cd \"c:\\\\Users\\\\jeanp\\\\Documents\\\\PROGRAMACION\\\\proyectoIHC2\\\\IHC_Proyect_2\\\\IHC_Proyect_1\" ; cmd /c \"npm run build:viewer\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"c:\\\\Users\\\\jeanp\\\\Documents\\\\PROGRAMACION\\\\proyectoIHC2\\\\IHC_Proyect_2\\\\IHC_Proyect_1\" ; cmd /c \"npm run build:renderer\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }

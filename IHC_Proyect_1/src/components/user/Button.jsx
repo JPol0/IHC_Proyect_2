@@ -3,6 +3,7 @@ import React from "react";
 import { useNode, useEditor } from "@craftjs/core";
 import { useNavigate } from "react-router-dom";
 import { SettingsTabs } from "../ui/SettingsTabs";
+import { navigateToSection } from '../../utils/navigation';
 
 export const Button = ({
   size = "small",
@@ -66,21 +67,9 @@ export const Button = ({
 
   const handleClick = (e) => {
     e.preventDefault();
-    // Section navigation (like ChevronButton)
+    // Section navigation
     if (actionType === 'section') {
-      // Preservar el sitio actual en la URL del editor
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      if (sectionName) qs.set('section', sectionName);
-      const target = sectionName ? `/editor?${qs.toString()}` : '';
-      if (!target) return;
-      if (target.startsWith('#')) {
-        const el = document.querySelector(target);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-      navigate(target);
+      navigateToSection(navigate, sectionName);
       return;
     }
     // External link

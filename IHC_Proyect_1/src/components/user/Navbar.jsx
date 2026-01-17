@@ -4,6 +4,7 @@ import { useNode, useEditor } from "@craftjs/core";
 import { useNavigate } from "react-router-dom";
 import { useUploadImage } from "../../hooks/useUploadImage";
 import { SettingsTabs } from "../ui/SettingsTabs";
+import { navigateToSection } from '../../utils/navigation';
 
 export const Navbar = ({
   // Logo props
@@ -108,13 +109,7 @@ export const Navbar = ({
     e.preventDefault();
     
     if (item.actionType === 'section') {
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      if (item.sectionName) qs.set('section', item.sectionName);
-      const target = item.sectionName ? `/editor?${qs.toString()}` : '';
-      if (!target) return;
-      navigate(target);
+      navigateToSection(navigate, item.sectionName);
       return;
     }
     

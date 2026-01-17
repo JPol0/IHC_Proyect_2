@@ -3,6 +3,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { useUploadImage } from '../../hooks/useUploadImage';
 import { useNavigate } from 'react-router-dom';
+import { navigateToSection } from '../../utils/navigation';
 
 export const Image = ({
   src = 'https://placehold.co/1200x500',
@@ -64,14 +65,7 @@ export const Image = ({
     if (enabled) return; // Disable in editor
 
     if (actionType === 'section') {
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      if (sectionName) qs.set('section', sectionName);
-      const target = sectionName ? `/editor?${qs.toString()}` : '';
-
-      if (!target) return;
-      navigate(target);
+      navigateToSection(navigate, sectionName);
       return;
     }
     

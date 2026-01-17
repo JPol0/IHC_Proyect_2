@@ -19,9 +19,8 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [showSaveAsComponent, setShowSaveAsComponent] = useState(false);
   
-  // New States for Full Site Export
+  // State for Full Site Export
   const [showExportOptions, setShowExportOptions] = useState(false);
-  const [exportWithImages, setExportWithImages] = useState(false);
 
   const sectionName = nameSection || '';
   const handleClear = () => {
@@ -83,6 +82,7 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Previsualización</title>
     <link rel="stylesheet" href="/craft-renderer-bundle.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   </head>
   <body>
     <div id="root"></div>
@@ -116,354 +116,124 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     try {
       setIsExporting(true);
       
-      // 1. Cargar Assets Estáticos
-      const assets = {};
-      try {
-        const indexRes = await fetch('/index.html'); assets.indexHtml = await indexRes.text();
-        const cssRes = await fetch('/craft-renderer-bundle.css'); assets.css = await cssRes.text();
-        const jsRes = await fetch('/craft-renderer-bundle.js'); assets.js = await jsRes.text();
-      } catch(e) {
-        throw new Error('Error cargando assets base (css/js). Ejecuta "npm run build:renderer".');
+      // Cargar Assets Estáticos
+      const resp = await fetch('/craft-renderer-bundle.js');
+      if (!resp.ok) throw new Error('No se encontró /craft-renderer-bundle.js. Ejecuta npm run build:renderer');
+      const bundleText = await resp.text();
+
+      let cssText = '';
+      const cssResp = await fetch('/craft-renderer-bundle.css');
+      if (cssResp.ok) {
+        cssText = await cssResp.text();
+        cssText = cssText.replace(/url\((['"]?)(\/assets\/)\s*/g, 'url($1./assets/');
       }
 
       const zip = new JSZip();
-      zip.file('craft-renderer-bundle.css', assets.css);
-      zip.file('craft-renderer-bundle.js', assets.js);
-      
-      const assetsFolder = zip.folder('assets');
-      const processedUrls = new Map(); // url -> localPath
-
-      // Variables de control de errores
-      const failedImages = [];
-      const successImages = [];
-
-      const normalizePossibleUrl = (raw) => {
-        if (!raw || typeof raw !== 'string') return null;
-        let url = raw.trim();
-
-        // extraer url("...") o url('...')
-        const m = url.match(/url\s*\(\s*(['"]?)(.*?)\1\s*\)/i);
-        if (m && m[2]) url = m[2].trim();
-
-        // convertir //example.com/image.png -> https://example.com/image.png
-        if (url.startsWith('//')) {
-          url = `${window.location.protocol}${url}`;
-        }
-
-        // resolver rutas relativas
-        if (url.startsWith('/')) {
-          try { url = new URL(url, window.location.origin).toString(); } catch {}
-        }
-
-        return url;
-      };
-
-      const tryDownloadFromSupabase = async (absoluteUrl) => {
-        try {
-          if (!absoluteUrl || typeof absoluteUrl !== 'string') return null;
-          const u = new URL(absoluteUrl);
-          const path = u.pathname || '';
-
-          // formatos comunes:
-          // /storage/v1/object/public/<bucket>/<filePath>
-          // /storage/v1/object/sign/<bucket>/<filePath>
-          const m = path.match(/\/storage\/v1\/object\/(public|sign)\/([^/]+)\/(.+)$/i);
-          if (!m) return null;
-          const bucket = decodeURIComponent(m[2]);
-          const filePath = decodeURIComponent(m[3]);
-
-          const { data, error } = await supabase.storage.from(bucket).download(filePath);
-          if (error) throw error;
-          if (!data) throw new Error('download() returned empty');
-          return data; // Blob
-        } catch (e) {
-          console.warn('[Export] Supabase download fallback failed:', e);
-          return null;
-        }
-      };
-
-      // Helper para descargar imagen y actualizar JSON
-      const processImages = async (node) => {
-        if (!node || !node.data) return;
-        
-        // Log para ver qué props estamos procesando y de dónde vienen
-        const propsSource = Object.keys(node.data.props || {}).length > 0 ? 'data.props' : (node.props && Object.keys(node.props).length > 0 ? 'node.props' : 'NONE');
-        const targetProps = propsSource === 'node.props' ? node.props : node.data.props;
-        
-        console.log(`[Export Debug] Procesando nodo: ${node.data.type?.resolvedName || 'Unknown'} (${node.id || '?'}). Fuente Props: ${propsSource}. Keys: ${Object.keys(targetProps || {}).join(', ')}`);
-
-        if (!targetProps) return;
-
-        const downloadAndGetPath = async (url) => {
-           // Normalizar URL para evitar duplicados
-           const cleanUrl = url.trim();
-           let localPath = processedUrls.get(cleanUrl);
-           if (localPath) return localPath;
-
-           console.log(`[Export] Intentando descargar: ${cleanUrl}`);
-
-           try {
-              let blob;
-              let ext = 'png';
-
-              const isData = cleanUrl.startsWith('data:image');
-
-              if (isData) {
-                const arr = cleanUrl.split(',');
-                const mime = arr[0]?.match(/:(.*?);/)?.[1] || 'image/png';
-                const bstr = atob(arr[1] || '');
-                let n = bstr.length;
-                const u8arr = new Uint8Array(n);
-                while (n--) u8arr[n] = bstr.charCodeAt(n);
-                blob = new Blob([u8arr], { type: mime });
-                ext = (mime.split('/')[1] || 'png').split('+')[0];
-              } else {
-                // 1) intentar fetch directo
-                try {
-                  // Intentamos primero sin credenciales para evitar preflight complex
-                  const res = await fetch(cleanUrl, { mode: 'cors', credentials: 'omit', redirect: 'follow' });
-                  if (!res.ok) throw new Error(`Status ${res.status}`);
-                  blob = await res.blob();
-                } catch (fetchErr) {
-                  console.warn(`[Export] Fetch directo falló para ${cleanUrl}, intentando Supabase fallback...`, fetchErr);
-                  // 2) fallback para Supabase Storage
-                  const sbBlob = await tryDownloadFromSupabase(cleanUrl);
-                  if (!sbBlob) throw fetchErr; // Si falla también Supabase, lanzamos el error original
-                  blob = sbBlob;
-                }
-
-                const mime = blob.type || 'image/png';
-                ext = (mime.split('/')[1] || 'png').split('+')[0];
-                // Ajuste de extensión si la URL tiene una explícita
-                const lower = cleanUrl.toLowerCase();
-                if (lower.includes('.svg')) ext = 'svg';
-                else if (lower.includes('.jpeg') || lower.includes('.jpg')) ext = 'jpg';
-                else if (lower.includes('.png')) ext = 'png';
-                else if (lower.includes('.webp')) ext = 'webp';
-              }
-
-              const fname = `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
-              assetsFolder.file(fname, blob);
-              localPath = `assets/${fname}`;
-              processedUrls.set(cleanUrl, localPath);
-              successImages.push(cleanUrl);
-              console.log(`[Export] Éxito: ${cleanUrl} -> ${localPath}`);
-              return localPath;
-            } catch (e) {
-              console.warn(`[Export] CRITICAL FAIL: ${cleanUrl}`, e);
-              failedImages.push({ url: cleanUrl, error: e?.message || String(e) });
-              return null; 
-            }
-        };
-
-        const processObject = async (obj, path = '') => {
-            if (!obj || typeof obj !== 'object') return;
-
-            for (const key of Object.keys(obj)) {
-                
-                // Debug log de cada llave
-                // console.log(`[Export Debug] Revisando key: ${path}${key} =`, obj[key]);
-
-                // Recursión para objetos anidados (ej. style, variants, etc)
-                if (obj[key] && typeof obj[key] === 'object' && !React.isValidElement(obj[key])) {
-                    await processObject(obj[key], path + key + '.');
-                    continue;
-                }
-
-                // Verificar si es una propiedad de imagen
-                // Agregamos 'background' y variantes camelCase/kebabCase comunes
-                const isImageKey = ['src', 'backgroundImage', 'url', 'imageUrl', 'cover', 'image', 'background', 'poster'].includes(key);
-                
-                // También verificamos si el VALOR parece una URL de imagen, independientemente de la key
-                const val = obj[key];
-                const isString = typeof val === 'string';
-                
-                // Si la key es sospechosa O el valor parece una URL de imagen conocida
-                let shouldProcess = isImageKey && isString;
-                
-                if (!shouldProcess && isString) {
-                    // Heurística adicional: si el valor termina en extensión de imagen o empieza con http y contiene /images/ o similar
-                    if (val.match(/\.(jpeg|jpg|png|gif|webp|svg)(\?.*)?$/i) || val.match(/^https?:\/\/.*(images|img|assets).*/i)) {
-                        shouldProcess = true;
-                    }
-                    // Si es data:image
-                    if (val.startsWith('data:image')) shouldProcess = true;
-                }
-
-                if (!shouldProcess) continue;
-
-                const raw = val;
-                const url = normalizePossibleUrl(raw);
-                if (!url) continue;
-
-                const isHttp = url.startsWith('http://') || url.startsWith('https://');
-                const isBlob = url.startsWith('blob:');
-                const isData = url.startsWith('data:image');
-
-                console.log(`[Export Debug] Candidato encontrado en ${path}${key}: ${url.substring(0, 50)}...`, {isHttp, isBlob, isData, exportWithImages});
-
-                if (!exportWithImages || !(isHttp || isBlob || isData)) {
-                     // console.log(`[Export Debug] SALTADO.`);
-                     continue;
-                }
-
-                const localPath = await downloadAndGetPath(url);
-                
-                if (localPath) {
-                    // Si estaba en formato url("..."), reponerlo
-                    if (raw.trim().match(/^url\s*\(/i)) {
-                         obj[key] = `url("${localPath}")`;
-                    } else {
-                         obj[key] = localPath;
-                    }
-                }
-            }
-        };
-
-        await processObject(targetProps, 'props.');
-        
-        // También procesar 'style' si existe en la raíz de data (a veces pasa en implementaciones custom)
-        if (node.data.style) {
-             await processObject(node.data.style, 'style.');
-        }
-
-        // Si procesamos node.props, asegurarnos de sincronizar con data.props por si acaso
-        if (propsSource === 'node.props' && node.data) {
-            node.data.props = targetProps;
-        }
-      };
-
-
-      // Helper para procesar un estado entero
-      // SIMPLIFICADO: Craft.js serializa como estructura PLANA {ROOT: {...}, nodeId1: {...}, nodeId2: {...}}
-      const processStateForBundle = async (stateStr, sectionName, slug) => {
-          // Parsear el estado (puede ser string u objeto)
-          let stateObj = typeof stateStr === 'string' ? JSON.parse(stateStr) : stateStr;
-          
-          // Procesar Nodos para Imágenes (Offline Mode)
-          // En Craft.js, todos los nodos están en el nivel raíz del objeto
-          const allNodes = Object.values(stateObj);
-          for (const node of allNodes) {
-             await processImages(node);
-          }
-          
-          return JSON.stringify(stateObj);
-      };
+      zip.file('craft-renderer-bundle.js', bundleText);
+      if (cssText) {
+        // Detectar assets del CSS
+        const assetMatches = Array.from(new Set(cssText.match(/\/assets\/[A-Za-z0-9_\-\.\/]+/g) || []));
+        const assets = await Promise.all(assetMatches.map(async (p) => {
+          try {
+            const r = await fetch(p);
+            if (!r.ok) return null;
+            const b = await r.blob();
+            return { path: p.replace(/^\//, ''), blob: b };
+          } catch (_) { return null; }
+        }));
+        assets.forEach((a) => { if (a && a.blob) zip.file(a.path, a.blob); });
+        zip.file('craft-renderer-bundle.css', cssText);
+      }
 
       if (sectionsToExport.length > 0) {
-          // ============================================
-          // Exportación SPA (Single Page Application)
-          // ============================================
+          // Exportación SPA (múltiples secciones)
           const routes = {};
           const sectionsList = [];
-          let startRoute = '/';
-
-          // Encontrar sección 'Inicio' para definir entry point
-          const inicioSection = sectionsToExport.find(s => s.nameSeccion && s.nameSeccion.toLowerCase() === 'inicio');
-          const firstSection = sectionsToExport[0];
-          const entrySection = inicioSection || firstSection;
+          
+          const toSlug = (s) => (s || 'seccion')
+            .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+            .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            .toLowerCase() || 'seccion';
 
           for (const sec of sectionsToExport) {
-              const rawName = sec.nameSeccion || 'Untitled';
-              // Generar slug URL-friendly
-              const slug = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page-' + sec.id;
-              
-              // Procesar JSON de la sección (imágenes, normalización)
-              const processedJson = await processStateForBundle(sec.json, rawName, slug);
-              
-              // Guardar en mapa de rutas
-              routes[slug] = processedJson;
-              
-              // Guardar metadatos para navegación por nombre
-              sectionsList.push({ name: rawName, slug: slug });
+              const name = sec.nameSeccion || 'Sección';
+              const slug = toSlug(name);
+              // sec.json ya es string JSON o un objeto
+              let json = sec.json;
+              if (typeof json !== 'string') {
+                json = JSON.stringify(json);
+              }
+              routes[slug] = json;
+              sectionsList.push({ name, slug });
           }
 
-          if (entrySection) {
-              const startName = entrySection.nameSeccion || 'Untitled';
-              const startSlug = startName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page-' + entrySection.id;
-              startRoute = '/' + startSlug;
-          }
+          // Heurística de inicio
+          const lower = (s) => (s || '').toLowerCase();
+          const pref = sectionsList.find(s => ['home','inicio','index'].includes(lower(s.name)));
+          const startSlug = pref ? pref.slug : (sectionsList[0]?.slug || '');
+          const startRoute = startSlug ? `/${startSlug}` : '/';
 
-          // Generar index.html ÚNICO con el bundle de datos
           const htmlContent = `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${siteSlug || 'Sitio Exportado'}</title>
-    <link rel="stylesheet" href="craft-renderer-bundle.css" />
-    <script>
-      // Configuración de rutas SPA
-      window.process = { env: { NODE_ENV: 'production' } };
-      window.__CRAFT_ROUTES__ = ${JSON.stringify(routes)};
-      window.__CRAFT_SECTIONS__ = ${JSON.stringify(sectionsList)};
-      window.__CRAFT_START_ROUTE__ = "${startRoute}";
-    </script>
+    ${cssText ? '<link rel="stylesheet" href="./craft-renderer-bundle.css" />' : ''}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <style>html,body,#root{height:100%} body{margin:0;background:#f8f9fa}</style>
   </head>
   <body>
     <div id="root"></div>
-    <script src="craft-renderer-bundle.js"></script>
+    <script>
+      window.global = window.global || window;
+      window.process = window.process || { env: { NODE_ENV: 'production' } };
+      window.__CRAFT_ROUTES__ = ${JSON.stringify(routes)};
+      window.__CRAFT_SECTIONS__ = ${JSON.stringify(sectionsList)};
+      window.__CRAFT_START_ROUTE__ = ${JSON.stringify(startRoute)};
+    </script>
+    <script src="./craft-renderer-bundle.js"></script>
   </body>
 </html>`;
-
           zip.file('index.html', htmlContent);
 
       } else {
-          // Exportación SINGLE PAGE (Legacy / Fallback)
-          const currentState = query.serialize();
-          // Parsear el estado (query.serialize devuelve string JSON)
-          let stateObj = JSON.parse(currentState);
-          
-          // Procesar imágenes si exportWithImages está activo
-          // En Craft.js, todos los nodos están en el nivel raíz del objeto (estructura plana)
-          const allNodes = Object.values(stateObj);
-          for (const node of allNodes) {
-             await processImages(node);
-          }
-          
-          // Escapar para insertar de forma segura en el HTML
-          const serializedEscaped = JSON.stringify(JSON.stringify(stateObj));
+          // Exportación SINGLE PAGE
+          const serialized = query.serialize();
+          const serializedEscaped = JSON.stringify(serialized);
 
           const htmlContent = `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Export</title>
-    <link rel="stylesheet" href="craft-renderer-bundle.css" />
+    <title>Página exportada</title>
+    ${cssText ? '<link rel="stylesheet" href="./craft-renderer-bundle.css" />' : ''}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   </head>
   <body>
     <div id="root"></div>
     <script>
       window.global = window.global || window;
-      window.process = { env: { NODE_ENV: 'production' } };
+      window.process = window.process || { env: { NODE_ENV: 'production' } };
       window.__CRAFT_PAGE_STATE__ = JSON.parse(${serializedEscaped});
     </script>
-    <script src="craft-renderer-bundle.js"></script>
+    <script src="./craft-renderer-bundle.js"></script>
   </body>
 </html>`;
-        zip.file('index.html', htmlContent);
+          zip.file('index.html', htmlContent);
       }
 
-
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
+      const blob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `site_export_${Date.now()}.zip`;
+      a.href = URL.createObjectURL(blob);
+      a.download = sectionName ? `${sectionName}-site.zip` : 'site-spa.zip';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      
+      a.remove();
+      URL.revokeObjectURL(a.href);
       setShowExportOptions(false);
       
-      let msg = '✅ ZIP exportado exitosamente!';
-      if (failedImages.length > 0) {
-          msg += `\n\n⚠️ ${failedImages.length} imágenes no se pudieron descargar (quedaron como enlaces externos) por restricciones de seguridad (CORS).`;
-          console.table(failedImages);
-      }
-      alert(msg);
-
     } catch (e) {
       console.error(e);
       alert('No se pudo exportar el ZIP: ' + e.message);
@@ -611,26 +381,12 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
             <div className="bg-white p-4 rounded shadow" style={{ width: '500px' }}>
                 <h5 className="mb-3">Exportar Sitio Web</h5>
                 <p className="small text-secondary mb-3">
-                  Se exportarán todas las secciones asociadas al sitio.
+                  Se exportarán todas las secciones asociadas al sitio como una SPA (Single Page Application).
                 </p>
                 
                 <div className="alert alert-info py-2 small mb-3">
                   <i className="bi bi-info-circle me-2"></i>
-                  La sección llamada <strong>"Inicio"</strong> se usará como página principal (index.html).
-                </div>
-
-                <div className="form-check mb-4">
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
-                    id="chkExportImages"
-                    checked={exportWithImages}
-                    onChange={(e) => setExportWithImages(e.target.checked)}
-                  />
-                  <label className="form-check-label small" htmlFor="chkExportImages">
-                    Descargar imágenes y recursos (Modo Offline) <br/>
-                    <span className="text-muted" style={{fontSize:'0.75rem'}}>Si se desactiva, las imágenes seguirán cargándose desde internet.</span>
-                  </label>
+                  La sección llamada <strong>"Inicio"</strong>, <strong>"Home"</strong> o <strong>"Index"</strong> se usará como página principal.
                 </div>
                 
                 <div className="d-flex justify-content-end gap-2">

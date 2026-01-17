@@ -2,6 +2,7 @@ import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useNavigate } from 'react-router-dom';
 import { SettingsTabs } from "../ui/SettingsTabs";
+import { navigateToSection } from '../../utils/navigation';
 
 export const BackButton = ({
   iconSize = 28,
@@ -61,11 +62,7 @@ export const BackButton = ({
     if (actionType === 'route' && to) {
       navigate(to);
     } else if (actionType === 'section' && sectionName) {
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      qs.set('section', sectionName);
-      navigate(`/editor?${qs.toString()}`);
+      navigateToSection(navigate, sectionName);
     } else if (actionType === 'external' && externalUrl) {
       if (externalNewTab) {
         window.open(externalUrl, '_blank');

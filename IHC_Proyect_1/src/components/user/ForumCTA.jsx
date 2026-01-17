@@ -3,6 +3,7 @@ import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useNavigate } from 'react-router-dom';
 import { SettingsTabs } from '../ui/SettingsTabs';
+import { navigateToSection } from '../../utils/navigation';
 
 export const ForumCTA = ({
   title = 'Visita el foro',
@@ -71,13 +72,7 @@ export const ForumCTA = ({
     e.preventDefault();
     
     if (actionType === 'section') {
-      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
-      const qs = new URLSearchParams();
-      if (site) qs.set('site', site);
-      if (sectionName) qs.set('section', sectionName);
-      const target = sectionName ? `/editor?${qs.toString()}` : '';
-      if (!target) return;
-      navigate(target);
+      navigateToSection(navigate, sectionName);
       return;
     }
     
