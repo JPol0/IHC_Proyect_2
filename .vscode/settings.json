@@ -17,6 +17,14 @@
         "/^cd IHC_Proyect_1; cmd /c \"npm run dev\"$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "Get-Item": true,
+        "npm run build:renderer": true,
+        "npx vite": true,
+        "/^cmd /c \"cd /d c:\\\\Users\\\\jeanp\\\\Documents\\\\PROGRAMACION\\\\proyectoIHC2\\\\IHC_Proyect_2\\\\IHC_Proyect_1 && npm run build:renderer\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "Set-ExecutionPolicy": true
     }
 }

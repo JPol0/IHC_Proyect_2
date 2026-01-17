@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import { HashRouter, Routes, Route, Navigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 
-// Importa los mismos componentes que usas en el editor principal
+// ============================================================================
+// COMPONENTES BASE (siempre incluidos - son ligeros)
+// ============================================================================
 import { Container } from './components/user/Container';
 import { Button } from './components/user/Button';
 import { Card, CardTop, CardBottom } from './components/user/Card';
@@ -12,11 +14,28 @@ import { Image } from './components/user/Image';
 import { BackgroundImageContainer } from './components/user/ImageContainer';
 import { ChevronButton } from './components/user/ChevronButton';
 import { IconButton } from './components/user/IconButton';
-// Columns container ha sido retirado del proyecto.
 import { FileDownload } from './components/user/FileDownload';
+import { Rectangle } from './components/user/Rectangle';
+
+// ============================================================================
+// COMPONENTES DE GRIDS (necesarios para layouts)
+// ============================================================================
+import { Grid2 } from './components/user/Grid2';
+import { Grid3 } from './components/user/Grid3';
+import { Grid5 } from './components/user/Grid5';
+import { GridCol } from './components/user/GridCol';
+
+// ============================================================================
+// COMPONENTES INTERACTIVOS (Forum, likes, etc.)
+// Nota: Forum hace llamadas a Supabase - considerar si es necesario offline
+// ============================================================================
 import { ForumButton } from './components/user/ForumButton';
 import { Forum } from './components/user/Forum/Forum';
 import { LikeButton } from './components/user/LikeButton';
+
+// ============================================================================
+// COMPONENTES DE SECCIONES Y TEMPLATES
+// ============================================================================
 import { Navbar } from './components/user/Navbar';
 import { HeroSection } from './components/user/HeroSection';
 import { NewsSection } from './components/user/NewsSection';
@@ -37,63 +56,28 @@ import { AguaPageTemplate } from './components/user/AguaPageTemplate';
 import { TribesCard } from './components/user/TribesCard';
 import { FeatureCard } from './components/user/FeatureCard';
 import { FeatureGrid } from './components/user/FeatureGrid';
-import { Grid2 } from './components/user/Grid2';
-import { Grid3 } from './components/user/Grid3';
-import { Grid5 } from './components/user/Grid5';
-import { GridCol } from './components/user/GridCol';
-import { Rectangle } from './components/user/Rectangle';
 
 // Estilos necesarios para que el sitio exportado luzca igual
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import './index.css';
 
+// Resolver: mapea nombres de componentes a sus implementaciones
 const resolver = {
-  Card,
-  Button,
-  Text,
-  Image,
-  Container,
-  CardTop,
-  CardBottom,
-  BackgroundImageContainer,
-  ChevronButton,
-  IconButton,
-  FileDownload,
-  ForumButton,
-  Forum,
-  LikeButton,
-  Navbar,
-  HeroSection,
-  NewsSection,
-  CategoryGrid,
-  FeaturedPhoto,
-  ForumCTA,
-  HomepageSection,
-  NewsArticle,
-  NewsPageTemplate,
-  TribesPageTemplate,
-  FloraPageTemplate,
-  FloraPageTemplateV1,
-  FloraPageTemplateV2,
-  FaunaPageTemplate,
-  FaunaPageTemplateV1,
-  FaunaPageTemplateV2,
-  AguaPageTemplate,
-  TribesCard,
-  FeatureCard,
-  FeatureGrid,
-  Grid2,
-  Grid3,
-  Grid5,
-  GridCol,
-  Rectangle,
+  // Base
+  Card, Button, Text, Image, Container, CardTop, CardBottom,
+  BackgroundImageContainer, ChevronButton, IconButton, FileDownload, Rectangle,
+  // Grids
+  Grid2, Grid3, Grid5, GridCol,
+  // Interactivos
+  ForumButton, Forum, LikeButton,
+  // Secciones y Templates
+  Navbar, HeroSection, NewsSection, CategoryGrid, FeaturedPhoto,
+  ForumCTA, HomepageSection, NewsArticle, NewsPageTemplate,
+  TribesPageTemplate, FloraPageTemplate, FloraPageTemplateV1, FloraPageTemplateV2,
+  FaunaPageTemplate, FaunaPageTemplateV1, FaunaPageTemplateV2, AguaPageTemplate,
+  TribesCard, FeatureCard, FeatureGrid,
 };
-
-// Nombres de componentes válidos
-const VALID_COMPONENTS = new Set(Object.keys(resolver));
-// Tags HTML comunes permitidos por seguridad
-const VALID_HTML_TAGS = new Set(['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'a', 'button', 'ul', 'li', 'ol', 'section', 'article', 'nav', 'header', 'footer', 'main', 'aside', 'blockquote', 'pre', 'code']);
 
 // Dimensiones objetivo del lienzo, igual que en el editor
 const TARGET_W = 1280;
@@ -109,12 +93,14 @@ function collectImageUrls(obj, out = new Set()) {
     const t = typeof v;
     if (t === 'string') {
       const s = v.trim();
+      // background: url("...")
       const urlInCss = s.match(/url\((['"]?)([^)"']+)\1\)/i);
       if (urlInCss && urlInCss[2]) {
         const u = urlInCss[2];
         if (/^https?:\/\//i.test(u)) out.add(u);
         return;
       }
+      // direct URLs
       if (/^https?:\/\//i.test(s) && /(\.(png|jpe?g|gif|webp|svg))(\?|#|$)/i.test(s)) {
         out.add(s);
       }
@@ -153,212 +139,42 @@ function prefetchImagesFromRoutes(routes) {
 }
 
 /**
- * Normaliza el estado de Craft.js para ser robusto ante errores de deserialización.
- * Asegura que:
- * 1. Todos los nodos tengan data.type.resolvedName
- * 2. No haya propiedades 'type' en el nivel superior (solo en data.type)
- * 3. La estructura sea plana (nodes se mueven al root si están anidados)
+ * Normaliza el estado de Craft.js - VERSIÓN SIMPLIFICADA
+ * Craft.js espera exactamente lo que devuelve query.serialize()
+ * Una estructura PLANA: { ROOT: {...}, nodeId1: {...}, nodeId2: {...}, ... }
+ * NO modifica la estructura, solo asegura que sea un string JSON válido.
  */
 function normalizeCraftState(rawState) {
   try {
-    // 1. Parsear o usar objeto directo (Evitar clonación profunda para rendimiento)
-    // Si rawState es un objeto (ej: window.__CRAFT_PAGE_STATE__), lo modificamos in-place
-    // para evitar cuellos de botella en la inicialización (structuredClone/JSON stringify son lentos en data grande).
-    let obj = rawState;
+    // Si es string, verificar que sea JSON válido
     if (typeof rawState === 'string') {
-        try {
-            obj = JSON.parse(rawState);
-        } catch (e) {
-            console.error('[normalize] Error parseando JSON string:', e);
-            throw e;
-        }
+      JSON.parse(rawState); // Solo valida
+      return rawState;
     }
-    
-    // 2. Fallback si no es objeto
-    if (!obj || typeof obj !== 'object') {
-      console.warn('[normalize] Estado inválido, usando fallback vacío');
-      return { 
-        ROOT: { 
-          data: { type: { resolvedName: 'BackgroundImageContainer' }, props: { padding: 0 } }, 
-          nodes: [], linkedNodes: {}, isCanvas: true, displayName: 'ROOT' 
-        } 
-      };
-    }
-
-    // 3. Aplanar estructura anidada (si existe obj.nodes y NO es array)
-    if (obj.nodes && typeof obj.nodes === 'object' && !Array.isArray(obj.nodes)) {
-      console.log('[normalize] Aplanando estructura de nodos anidada...');
-      const nestedNodes = obj.nodes;
-      delete obj.nodes; // Eliminar el contenedor 'nodes'
-      // Mover los hijos al nivel superior
-      Object.keys(nestedNodes).forEach(k => {
-        obj[k] = nestedNodes[k];
-      });
-    }
-
-    // 4. Validar y corregir cada nodo
-    const validKeys = new Set();
-    
-    // Función auxiliar para corregir un nodo
-    const fixNode = (node, key) => {
-       if (!node || typeof node !== 'object') return false;
-
-       // --- CORRECCIÓN DE TYPE (CRÍTICO PARA DESERIALIZE) ---
-       // deserialize() require 'type' en el nivel superior.
-       
-       if (!node.type) {
-          // Si falta type, intentamos recuperarlo de data.type
-          if (node.data && node.data.type) {
-             if (typeof node.data.type === 'string') node.type = { resolvedName: node.data.type };
-             else if (typeof node.data.type === 'object') node.type = { ...node.data.type };
-          } else {
-             // Si no hay nada, asignamos 'div' como fallback seguro
-             node.type = { resolvedName: 'div' }; 
-          }
-       }
-
-       // Asegurar formato { resolvedName: '...' }
-       if (typeof node.type === 'string') node.type = { resolvedName: node.type };
-       
-       if (!node.type.resolvedName) {
-           node.type.resolvedName = node.displayName || 'div';
-       }
-
-       // --- VALIDACIÓN CONTRA RESOLVER ---
-       const rn = node.type.resolvedName;
-       if (!VALID_COMPONENTS.has(rn) && !VALID_HTML_TAGS.has(rn.toLowerCase())) {
-          console.warn(`[normalize] Componente '${rn}' no reconocido en nodo ${key}. Reemplazando por 'Container'.`);
-          // Si el componente desconocido parece un contenedor, usamos Container, sino div
-          // Por defecto usamos Container para no perder los hijos si los tiene
-          node.type = { resolvedName: 'Container' };
-          node.data = node.data || {};
-          node.data.type = { resolvedName: 'Container' };
-          node.displayName = 'Container (Fallback)';
-       }
-
-       // Sincronizar data para consistencia interna
-       if (!node.data) node.data = {};
-       node.data.type = node.type;
-
-       // --- CORRECCIÓN DE PROPS ---
-       if (!node.props) node.props = {};
-       if (!node.data.props) node.data.props = node.props;
-
-       // --- OTROS CAMPOS REQUERIDOS ---
-       if (!node.custom) node.custom = {};
-       // hidden debe ser boolean
-       if (typeof node.hidden !== 'boolean') node.hidden = !!node.hidden;
-       
-       // --- CORRECCIÓN DE NODOS HIJOS ---
-       if (!node.nodes) node.nodes = [];
-       else if (!Array.isArray(node.nodes)) {
-          // Si viene como objeto, convertir keys a array
-          if (typeof node.nodes === 'object') node.nodes = Object.keys(node.nodes);
-          else node.nodes = [];
-       }
-       
-       if (!node.linkedNodes) node.linkedNodes = {};
-       
-       // ROOT específico
-       if (key === 'ROOT') node.isCanvas = true;
-
-       return true;
-    };
-
-    // Iterar sobre todas las keys del objeto plano
-    Object.keys(obj).forEach(key => {
-       if (fixNode(obj[key], key)) {
-          validKeys.add(key);
-       }
-    });
-
-    // 5. Asegurar ROOT existe
-    if (!obj.ROOT) {
-       console.warn('[normalize] ROOT faltante, creando default');
-       obj.ROOT = {
-         data: { type: { resolvedName: 'BackgroundImageContainer' }, props: { padding: 0 } },
-         nodes: [], linkedNodes: {}, isCanvas: true, displayName: 'ROOT', hidden: false, custom: {}
-       };
-       validKeys.add('ROOT');
-    }
-
-    // 6. Limpiar referencias rotas (hijos que no existen)
-    Object.keys(obj).forEach(key => {
-       if (!validKeys.has(key)) return;
-       const node = obj[key];
-       
-       // Filtrar nodes
-       if (node.nodes && node.nodes.length > 0) {
-          node.nodes = node.nodes.filter(id => validKeys.has(id));
-       }
-       
-       // Filtrar linkedNodes
-       if (node.linkedNodes) {
-          const newLinked = {};
-          Object.keys(node.linkedNodes).forEach(k => {
-             if (validKeys.has(k)) newLinked[k] = node.linkedNodes[k];
-          });
-          node.linkedNodes = newLinked;
-       }
-    });
-
-    return obj;
-
-  } catch (e) {
-    console.error('[normalize] Error fatal:', e);
-    // Fallback de emergencia absoluto
-    return { 
-        ROOT: { 
-            data: { type: { resolvedName: 'BackgroundImageContainer' }, props: {} }, 
-            nodes: [], linkedNodes: {}, isCanvas: true, displayName: 'ROOT' 
-        } 
-    };
+    // Si es objeto, convertir a string
+    return JSON.stringify(rawState);
+  } catch {
+    // Si falla, devolver tal cual (será un error que se mostrará al usuario)
+    return typeof rawState === 'string' ? rawState : JSON.stringify(rawState);
   }
 }
 
 function Loader() {
   const { actions } = useEditor();
   useEffect(() => {
-    // Esperar un poco para asegurar montado
-    const timer = setTimeout(() => {
-        try {
-            const raw = window.__CRAFT_PAGE_STATE__;
-            if (!raw) {
-                console.log('[Loader] No hay estado inicial global (__CRAFT_PAGE_STATE__)');
-                return;
-            }
-            
-            console.log('[Loader] Procesando estado...');
-            const json = normalizeCraftState(raw);
-            
-            console.log('[Loader] Deserializando...');
-            actions.deserialize(json);
-            console.log('[Loader] Éxito.');
-
-            // Feedback visual discreto de éxito
-            const div = document.createElement('div');
-            div.innerText = 'Carga Exitosa';
-            div.style.cssText = 'position:fixed;bottom:0;right:0;background:rgba(0,128,0,0.8);color:white;padding:4px 8px;z-index:9999;font-size:10px;pointer-events:none;border-radius:4px 0 0 0;';
-            document.body.appendChild(div);
-            setTimeout(() => div.remove(), 3000);
-
-        } catch (e) {
-            console.error('[Loader] Error:', e);
-            // Mostrar error en pantalla
-            const div = document.createElement('div');
-            div.innerHTML = `<h3 style="margin:0 0 10px 0">Error de Visualización</h3><pre style="white-space:pre-wrap;font-size:12px">${e.message}</pre>`;
-            div.style.cssText = 'position:fixed;top:20px;left:20px;right:20px;background:white;color:#d32f2f;padding:20px;z-index:9999;border:1px solid #d32f2f;box-shadow:0 4px 6px rgba(0,0,0,0.1);border-radius:8px;max-height:80vh;overflow:auto;';
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.innerText = 'Cerrar';
-            closeBtn.style.cssText = 'margin-top:10px;padding:5px 10px;cursor:pointer;';
-            closeBtn.onclick = () => div.remove();
-            div.appendChild(closeBtn);
-            
-            document.body.appendChild(div);
-        }
-    }, 100);
-    return () => clearTimeout(timer);
+    try {
+      const raw = window.__CRAFT_PAGE_STATE__;
+      console.log('[Export Viewer] Estado recibido:', typeof raw, raw ? (typeof raw === 'string' ? raw.length + ' chars' : 'object') : 'null');
+      if (!raw) return;
+      const json = normalizeCraftState(raw);
+      actions.deserialize(json);
+    } catch (e) {
+      console.error('No se pudo deserializar el estado exportado', e);
+      const marker = document.createElement('div');
+      marker.style.cssText = 'position:fixed;inset:0;background:#fff;color:#b00020;padding:16px;font:14px system-ui;overflow:auto;';
+      marker.innerText = 'Error al deserializar el estado exportado. Revisa la consola.';
+      document.body.appendChild(marker);
+    }
   }, [actions]);
   return null;
 }
@@ -480,39 +296,19 @@ function ViewerApp() {
 
 // Auto-montaje al cargar el bundle
 const mount = () => {
+  const el = document.getElementById('root');
+  if (!el) return;
   try {
-    const el = document.getElementById('root');
-    if (!el) {
-      document.body.innerHTML = '<h1 style="color:red; padding: 20px;">ERROR CRÍTICO: No se encontró el elemento #root en el HTML.</h1>';
-      console.error('No se encontró #root para montar ViewerApp');
-      return;
-    }
-    
-    // Nota: Eliminamos la advertencia sobre window.__CRAFT_PAGE_STATE__ aquí, 
-    // ya que Loader se encarga de esperarlo y la advertencia temprana puede ser confusa.
-
-    try {
-      // Fija color de fondo global del documento exportado
-      document.body.style.margin = '0';
-      document.body.style.backgroundColor = VIEWER_BG;
-    } catch {}
-
-    const root = createRoot(el);
-    
-    root.render(
-      <HashRouter>
-        <ViewerApp />
-      </HashRouter>
-    );
-
-    console.log('[Export Viewer] Aplicación montada correctamente en #root');
-  } catch (e) {
-    document.body.innerHTML = `<div style="color:red; padding:20px; background:white;">
-      <h1>ERROR AL MONTAR APLICACIÓN</h1>
-      <pre>${e.message}\n${e.stack}</pre>
-    </div>`;
-    console.error('Excepción en mount():', e);
-  }
+    // Fija color de fondo global del documento exportado
+    document.body.style.margin = '0';
+    document.body.style.backgroundColor = VIEWER_BG;
+  } catch {}
+  const root = createRoot(el);
+  root.render(
+    <HashRouter>
+      <ViewerApp />
+    </HashRouter>
+  );
 };
 
 mount();

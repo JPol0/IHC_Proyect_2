@@ -62,384 +62,36 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     }
   };
 
-  // Función helper para normalizar y validar el estado de Craft.js
-  // Esta función es CONSERVADORA: solo corrige problemas críticos, no elimina nodos
-  const normalizeState = (rawState) => {
-    try {
-      // Parsear el estado si es string
-      let stateObj = typeof rawState === 'string' ? JSON.parse(rawState) : JSON.parse(JSON.stringify(rawState));
-      
-      if (!stateObj || typeof stateObj !== 'object') {
-        throw new Error('Estado no es un objeto válido');
-      }
 
-      // IMPORTANTE: En Craft.js, query.serialize() devuelve un objeto donde:
-      // - ROOT está en stateObj.ROOT
-      // - Los demás nodos están directamente en stateObj (no en stateObj.nodes)
-      // Necesitamos extraer los nodos del objeto raíz y ponerlos en stateObj.nodes
-      
-      // Extraer nodos del objeto raíz (todos excepto ROOT)
-      if (!stateObj.nodes) {
-        stateObj.nodes = {};
-      }
-      
-      // Recopilar todos los nodos que están directamente en el objeto raíz
-      const nodeIdsFromRoot = [];
-      Object.keys(stateObj).forEach(key => {
-        if (key !== 'ROOT' && key !== 'nodes' && stateObj[key] && typeof stateObj[key] === 'object') {
-          // Este es un nodo, moverlo a stateObj.nodes
-          stateObj.nodes[key] = stateObj[key];
-          nodeIdsFromRoot.push(key);
-          // No eliminar del objeto raíz todavía, lo haremos después
-        }
-      });
-      
-      if (nodeIdsFromRoot.length > 0) {
-        console.log(`[normalizeState] ${nodeIdsFromRoot.length} nodos encontrados en el objeto raíz, movidos a stateObj.nodes`);
-        // Eliminar los nodos del objeto raíz ahora que están en stateObj.nodes
-        nodeIdsFromRoot.forEach(nodeId => {
-          delete stateObj[nodeId];
-        });
-      }
 
-      // Recopilar todos los IDs de nodos válidos ANTES de procesar
-      const validNodeIds = new Set();
-      validNodeIds.add('ROOT');
-      
-      Object.keys(stateObj.nodes || {}).forEach(nodeId => {
-        const node = stateObj.nodes[nodeId];
-        if (node && typeof node === 'object') {
-          validNodeIds.add(nodeId);
-        }
-      });
-      
-      console.log(`[normalizeState] Estado inicial: ${validNodeIds.size - 1} nodos en stateObj.nodes (sin ROOT)`);
-
-      // Función recursiva para validar y corregir nodos
-      // IMPORTANTE: Esta función NO elimina nodos, solo los corrige
-      const validateNode = (node, nodeId) => {
-        if (!node || typeof node !== 'object') {
-          console.warn(`[normalizeState] Nodo ${nodeId} no es un objeto válido, pero lo mantenemos`);
-          // En lugar de retornar false, crear estructura mínima
-          if (!node || typeof node !== 'object') {
-            node = {};
-          }
-        }
-
-        // Asegurar estructura data
-        if (!node.data) {
-          node.data = {};
-        }
-        
-        // Asegurar estructura data.type - CRÍTICO para Craft.js
-        if (!node.data.type) {
-          // Intentar obtener el tipo de otras propiedades
-          if (node.type) {
-            if (typeof node.type === 'string') {
-              node.data.type = { resolvedName: node.type };
-            } else if (typeof node.type === 'object' && node.type.resolvedName) {
-              node.data.type = node.type;
-            } else if (typeof node.type === 'object' && node.type.name) {
-              node.data.type = { resolvedName: node.type.name };
-            } else if (typeof node.type === 'object') {
-              // Si es un objeto pero no tiene resolvedName, intentar crearlo
-              node.data.type = { resolvedName: node.type.resolvedName || 'Unknown' };
-            } else {
-              node.data.type = { resolvedName: 'Unknown' };
-            }
-          } else {
-            console.warn(`[normalizeState] Nodo ${nodeId} no tiene tipo, usando Unknown`);
-            node.data.type = { resolvedName: 'Unknown' };
-          }
-        }
-        
-        // Asegurar que type tenga resolvedName - CRÍTICO (esto causa "Invariant failed" si falta)
-        if (!node.data.type || typeof node.data.type !== 'object') {
-          node.data.type = { resolvedName: 'Unknown' };
-        }
-        if (!node.data.type.resolvedName || typeof node.data.type.resolvedName !== 'string') {
-          if (typeof node.data.type === 'string') {
-            node.data.type = { resolvedName: node.data.type };
-          } else if (node.data.type.name) {
-            node.data.type.resolvedName = String(node.data.type.name);
-          } else {
-            node.data.type.resolvedName = 'Unknown';
-          }
-        }
-
-        // Asegurar que props exista
-        if (!node.data.props || typeof node.data.props !== 'object') {
-          // Intentar recuperar props del nivel superior si existen
-          if (node.props && typeof node.props === 'object') {
-            console.log(`[normalizeState] Recuperando props del nivel superior para nodo ${nodeId}`);
-            node.data.props = { ...node.props }; // Copia superficial
-          } else {
-            node.data.props = {};
-          }
-        } else if (Object.keys(node.data.props).length === 0 && node.props && typeof node.props === 'object' && Object.keys(node.props).length > 0) {
-           // Si data.props está vacío pero node.props tiene cosas, mezclar
-           console.log(`[normalizeState] Mezclando props del nivel superior para nodo ${nodeId} (data.props estaba vacío)`);
-           node.data.props = { ...node.props };
-        }
-
-        // Asegurar que custom exista
-        if (!node.custom || typeof node.custom !== 'object') {
-          node.custom = {};
-        }
-
-        // Asegurar que hidden sea boolean
-        if (typeof node.hidden !== 'boolean') {
-          node.hidden = false;
-        }
-
-        // Asegurar que linkedNodes exista
-        if (!node.linkedNodes || typeof node.linkedNodes !== 'object') {
-          node.linkedNodes = {};
-        }
-
-        // Asegurar que displayName exista (opcional pero recomendado)
-        if (!node.displayName && node.data.type && node.data.type.resolvedName) {
-          node.displayName = node.data.type.resolvedName;
-        }
-        
-        // Verificación final: asegurar que resolvedName existe
-        if (!node.data?.type?.resolvedName) {
-          console.error(`[normalizeState] Nodo ${nodeId} NO tiene resolvedName después de validación!`);
-          node.data.type = node.data.type || {};
-          node.data.type.resolvedName = 'Unknown';
-        }
-
-        // Asegurar que nodes sea un array (no objeto) si existe
-        if (node.nodes && typeof node.nodes === 'object' && !Array.isArray(node.nodes)) {
-          // Convertir objeto a array de keys
-          node.nodes = Object.keys(node.nodes);
-        }
-
-        // Validar nodos hijos recursivamente (solo si nodes es array)
-        if (node.nodes && Array.isArray(node.nodes)) {
-          node.nodes.forEach(childId => {
-            if (stateObj.nodes && stateObj.nodes[childId]) {
-              validateNode(stateObj.nodes[childId], childId);
-            }
-          });
-        }
-        
-        // CRÍTICO: Eliminar 'type' del nivel superior - causa "Invariant failed"
-        // Craft.js solo espera data.type, tener 'type' en ambos lugares causa el error
-        if (node.type && node.data && node.data.type) {
-          delete node.type;
-        }
-
-        return true; // Siempre retornar true para no eliminar nodos
-      };
-
-      // Asegurar propiedades requeridas en todos los nodos
-      const ensureRequiredProperties = (node, isRoot = false) => {
-        if (!node.custom) node.custom = {};
-        if (node.hidden === undefined) node.hidden = false;
-        if (!node.linkedNodes) node.linkedNodes = {};
-        if (node.isCanvas === undefined) {
-          node.isCanvas = isRoot;
-        }
-      };
-
-      // Validar todos los nodos - NO ELIMINAR, solo corregir
-      if (stateObj.nodes && typeof stateObj.nodes === 'object') {
-        const nodeIds = Object.keys(stateObj.nodes);
-        let correctedCount = 0;
-        nodeIds.forEach(nodeId => {
-          const node = stateObj.nodes[nodeId];
-          if (node && typeof node === 'object') {
-            // CRÍTICO: Eliminar 'type' del nivel superior ANTES de validar
-            // Esto evita que se copie a data.type incorrectamente
-            if (node.type && node.data && node.data.type) {
-              delete node.type;
-              correctedCount++;
-            }
-            validateNode(node, nodeId);
-            // Asegurar propiedades requeridas
-            ensureRequiredProperties(node, false);
-          } else {
-            console.warn(`[normalizeState] Nodo ${nodeId} no es válido, pero lo mantenemos`);
-          }
-        });
-        console.log(`[normalizeState] ${correctedCount} nodos validados y corregidos`);
-      }
-
-      // Validar ROOT
-      if (stateObj.ROOT) {
-        if (!validateNode(stateObj.ROOT, 'ROOT')) {
-          // Si ROOT es inválido, crear uno nuevo
-          stateObj.ROOT = {
-            isCanvas: true,
-            props: { padding: 0, backgroundColor: '#ffffff' },
-            displayName: 'BackgroundImageContainer',
-            custom: {},
-            hidden: false,
-            nodes: [],
-            linkedNodes: {},
-            data: {
-              type: { resolvedName: 'BackgroundImageContainer' },
-              props: { padding: 0, backgroundColor: '#ffffff' }
-            }
-          };
-        } else {
-          ensureRequiredProperties(stateObj.ROOT, true);
-          // Asegurar que ROOT tenga isCanvas
-          stateObj.ROOT.isCanvas = true;
-          // CRÍTICO: Eliminar 'type' del nivel superior - causa "Invariant failed"
-          if (stateObj.ROOT.type) {
-            delete stateObj.ROOT.type;
-          }
-        }
-      } else {
-        // Si no hay ROOT, crear uno
-        stateObj.ROOT = {
-          isCanvas: true,
-          props: { padding: 0, backgroundColor: '#ffffff' },
-          displayName: 'BackgroundImageContainer',
-          custom: {},
-          hidden: false,
-          nodes: [],
-          linkedNodes: {},
-          data: {
-            type: { resolvedName: 'BackgroundImageContainer' },
-            props: { padding: 0, backgroundColor: '#ffffff' }
-          }
-        };
-      }
-      
-      // CRÍTICO: Eliminar 'type' del nivel superior en ROOT si existe
-      // Craft.js solo espera data.type, tener 'type' en ambos lugares causa "Invariant failed"
-      if (stateObj.ROOT.type) {
-        delete stateObj.ROOT.type;
-      }
-
-      // Limpiar referencias rotas: asegurar que todos los nodos referenciados existan
-      const cleanBrokenReferences = () => {
-        let cleanedCount = 0;
-        
-        // Limpiar ROOT.nodes
-        if (stateObj.ROOT && Array.isArray(stateObj.ROOT.nodes)) {
-          const beforeCount = stateObj.ROOT.nodes.length;
-          stateObj.ROOT.nodes = stateObj.ROOT.nodes.filter(id => validNodeIds.has(id));
-          const afterCount = stateObj.ROOT.nodes.length;
-          if (beforeCount !== afterCount) {
-            console.warn(`[normalizeState] ROOT.nodes limpiado: ${beforeCount} -> ${afterCount} referencias`);
-            cleanedCount += (beforeCount - afterCount);
-          }
-        }
-
-        // Limpiar referencias en todos los nodos
-        Object.keys(stateObj.nodes || {}).forEach(nodeId => {
-          const node = stateObj.nodes[nodeId];
-          if (!node || typeof node !== 'object') return;
-          
-          // Limpiar nodes array
-          if (Array.isArray(node.nodes)) {
-            const beforeCount = node.nodes.length;
-            node.nodes = node.nodes.filter(id => validNodeIds.has(id));
-            const afterCount = node.nodes.length;
-            if (beforeCount !== afterCount) {
-              cleanedCount += (beforeCount - afterCount);
-            }
-          }
-          
-          // Limpiar linkedNodes
-          if (node.linkedNodes && typeof node.linkedNodes === 'object') {
-            const cleanedLinkedNodes = {};
-            Object.keys(node.linkedNodes).forEach(key => {
-              if (validNodeIds.has(key)) {
-                cleanedLinkedNodes[key] = node.linkedNodes[key];
-              }
-            });
-            node.linkedNodes = cleanedLinkedNodes;
-          }
-        });
-        
-        if (cleanedCount > 0) {
-          console.warn(`[normalizeState] ${cleanedCount} referencias rotas limpiadas`);
-        }
-      };
-
-      cleanBrokenReferences();
-
-      const finalNodeCount = Object.keys(stateObj.nodes || {}).length;
-      console.log(`[normalizeState] Estado normalizado: ${finalNodeCount} nodos, ROOT válido:`, !!stateObj.ROOT?.data?.type?.resolvedName);
-      
-      return JSON.stringify(stateObj);
-    } catch (e) {
-      console.error('Error normalizando estado:', e);
-      throw e;
-    }
-  };
-
+  // Previsualizar en nueva pestaña usando el bundle público del viewer
+  // VERSIÓN SIMPLIFICADA: Pasa el JSON de query.serialize() directamente
   const handlePreview = async () => {
     try {
       setIsPreviewing(true);
       actions.setOptions((opts) => (opts.enabled = false));
-      const state = query.serialize();
       
-      console.log('[Preview] Estado original serializado:', state.substring(0, 200) + '...');
-      
-      // Intentar normalizar el estado, pero si falla, usar el original
-      let normalizedState = state;
-      let stateObj;
-      
-      try {
-        // Primero parsear el estado original para verificar que sea válido
-        stateObj = JSON.parse(state);
-        console.log('[Preview] Estado original parseado. Nodos:', Object.keys(stateObj.nodes || {}).length);
-        
-        // Intentar normalizar solo si hay problemas obvios
-        try {
-          normalizedState = normalizeState(state);
-          stateObj = JSON.parse(normalizedState);
-          console.log('[Preview] Estado normalizado aplicado');
-        } catch (normalizeError) {
-          console.warn('[Preview] Normalización falló, usando estado original:', normalizeError);
-          // Usar el estado original parseado
-          stateObj = JSON.parse(state);
-        }
-        
-        // Validación básica
-        if (!stateObj.ROOT) {
-          throw new Error('ROOT no existe en el estado');
-        }
-        console.log('[Preview] Estado válido para previsualización');
-      } catch (parseError) {
-        console.error('[Preview] Error parseando estado:', parseError);
-        throw new Error('El estado no es JSON válido: ' + parseError.message);
-      }
-      
-      // Usar la URL base del servidor actual para cargar los recursos
-      const baseUrl = window.location.origin;
-      const cssUrl = `${baseUrl}/craft-renderer-bundle.css`;
-      const jsUrl = `${baseUrl}/craft-renderer-bundle.js`;
+      // Serializa el estado del editor (string JSON)
+      const serialized = query.serialize();
+      // Escape para insertar en script de forma segura
+      const serializedEscaped = JSON.stringify(serialized);
 
-      // Crear el HTML con el estado inyectado de forma segura
       const html = `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Previsualización</title>
-    <link rel="stylesheet" href="${cssUrl}" />
+    <link rel="stylesheet" href="/craft-renderer-bundle.css" />
   </head>
   <body>
     <div id="root"></div>
     <script>
       window.global = window.global || window;
       window.process = window.process || { env: { NODE_ENV: 'production' } };
-      try {
-        window.__CRAFT_PAGE_STATE__ = ${JSON.stringify(stateObj)};
-        console.log('[Preview HTML] Estado asignado correctamente');
-      } catch(e) {
-        console.error('[Preview HTML] Error al asignar el estado:', e);
-        window.__CRAFT_PAGE_STATE__ = null;
-      }
+      window.__CRAFT_PAGE_STATE__ = JSON.parse(${serializedEscaped});
     </script>
-    <script src="${jsUrl}"></script>
+    <script src="/craft-renderer-bundle.js"></script>
   </body>
 </html>`;
 
@@ -683,15 +335,16 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
 
 
       // Helper para procesar un estado entero
+      // SIMPLIFICADO: Craft.js serializa como estructura PLANA {ROOT: {...}, nodeId1: {...}, nodeId2: {...}}
       const processStateForBundle = async (stateStr, sectionName, slug) => {
-          // Normalizar
-          const normalized = normalizeState(stateStr);
-          const stateObj = JSON.parse(normalized);
+          // Parsear el estado (puede ser string u objeto)
+          let stateObj = typeof stateStr === 'string' ? JSON.parse(stateStr) : stateStr;
           
           // Procesar Nodos para Imágenes (Offline Mode)
-          const allNodes = [stateObj.ROOT, ...Object.values(stateObj.nodes || {})];
+          // En Craft.js, todos los nodos están en el nivel raíz del objeto
+          const allNodes = Object.values(stateObj);
           for (const node of allNodes) {
-             await processImages(node); // Modifica stateObj in-place
+             await processImages(node);
           }
           
           return JSON.stringify(stateObj);
@@ -758,15 +411,18 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
       } else {
           // Exportación SINGLE PAGE (Legacy / Fallback)
           const currentState = query.serialize();
-          // Normalizar
-          const normalized = normalizeState(currentState);
-          let stateObj = JSON.parse(normalized);
+          // Parsear el estado (query.serialize devuelve string JSON)
+          let stateObj = JSON.parse(currentState);
           
-          // Procesar imágenes
-          const allNodes = [stateObj.ROOT, ...Object.values(stateObj.nodes || {})];
+          // Procesar imágenes si exportWithImages está activo
+          // En Craft.js, todos los nodos están en el nivel raíz del objeto (estructura plana)
+          const allNodes = Object.values(stateObj);
           for (const node of allNodes) {
              await processImages(node);
           }
+          
+          // Escapar para insertar de forma segura en el HTML
+          const serializedEscaped = JSON.stringify(JSON.stringify(stateObj));
 
           const htmlContent = `<!doctype html>
 <html lang="es">
@@ -781,7 +437,7 @@ export default function Header({ nameSection, siteId = null, siteSlug = null }) 
     <script>
       window.global = window.global || window;
       window.process = { env: { NODE_ENV: 'production' } };
-      try { window.__CRAFT_PAGE_STATE__ = ${JSON.stringify(stateObj)}; } catch(e) {}
+      window.__CRAFT_PAGE_STATE__ = JSON.parse(${serializedEscaped});
     </script>
     <script src="craft-renderer-bundle.js"></script>
   </body>
