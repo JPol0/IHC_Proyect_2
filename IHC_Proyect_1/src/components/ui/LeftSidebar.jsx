@@ -39,6 +39,7 @@ import { GridCol } from '../user/GridCol';
 import { FeatureCard } from '../user/FeatureCard';
 import { BackButton } from '../user/BackButton';
 import { CommentButton } from '../user/CommentButton';
+import { Rectangle } from '../user/Rectangle';
 
 export default function LeftSidebar() {
   const { connectors } = useEditor();
@@ -72,6 +73,7 @@ export default function LeftSidebar() {
     { label: "Botón", icon: "bi-hand-index-thumb", create: (ref) => connectors.create(ref, <Button size="small" variant="contained">Botón</Button>) },
     { label: "Imagen", icon: "bi-image", create: (ref) => connectors.create(ref, <Image />) },
     { label: "Contenedor", icon: "bi-square", create: (ref) => connectors.create(ref, <Element is={Container} padding={16} background="#ffffff" canvas />) },
+    { label: "Rectángulo", icon: "bi-bounding-box", create: (ref) => connectors.create(ref, <Rectangle />) },
     { label: "Tarjeta", icon: "bi-card-heading", create: (ref) => connectors.create(ref, <Element is={Card} />) },
     { label: "Grid Destacado", icon: "bi-grid-1x2", create: (ref) => connectors.create(ref, <Element is={FeatureGrid} />) },
     { label: "Ícono", icon: "bi-star", create: (ref) => connectors.create(ref, <IconButton iconName="star" iconSize={24} />) },

@@ -17,7 +17,17 @@ export const ForumButton = ({
   borderColor = 'transparent',
   showIcon = true,
   showText = false,
-  route = '/forum',
+  
+  // Link properties
+  actionType = 'route', // 'none', 'route', 'section', 'external'
+  to = '/forum', // route path
+  sectionName = '', // search param for section '?section=name'
+  externalUrl = '', // for external links
+  externalNewTab = false,
+  
+  // Legacy
+  route,
+
   translateX = 0,
   translateY = 0,
   zIndex = 0,
@@ -33,8 +43,59 @@ export const ForumButton = ({
     selected: node.events.selected,
   }));
   
-  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node } } = useEditor();
+  const { actions: { add, selectNode, delete: deleteNode }, query: { createNode, node }, enabled } = useEditor((state) => ({
+    enabled: state.options.enabled,
+  }));
   const navigate = useNavigate();
+  
+  // Migration for legacy props
+  React.useEffect(() => {
+    if (route) {
+        setProp(props => {
+          if (!props.to) props.to = route;
+          props.route = undefined;
+        });
+    }
+  }, [route, setProp]);
+
+  // Handle click logic from Button.jsx
+  const handleClick = (e) => {
+    e.preventDefault();
+    if (enabled) return;
+
+    if (actionType === 'section') {
+      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
+      const qs = new URLSearchParams();
+      if (site) qs.set('site', site);
+      if (sectionName) qs.set('section', sectionName);
+      const target = sectionName ? `/editor?${qs.toString()}` : '';
+
+      if (!target) return;
+      navigate(target);
+      return;
+    }
+    
+    // External link
+    if (actionType === 'external') {
+      const url = (externalUrl || '').trim();
+      if (!url) return;
+      if (typeof window !== 'undefined') {
+        window.open(url, externalNewTab ? '_blank' : '_self');
+      }
+      return;
+    }
+
+    // Default: internal route
+    const r = (to || '').trim();
+    if (r) {
+      if (r.startsWith('#')) {
+        const el = document.querySelector(r);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      navigate(r);
+    }
+  };
 
   const handleMouseDown = (e) => {
     e.stopPropagation();
@@ -68,11 +129,10 @@ export const ForumButton = ({
     <button
       {...props}
       ref={(ref) => connect(drag(ref))}
-      onClick={() => {
-         navigate(route);
-      }}
+      onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+
       className="d-inline-flex align-items-center justify-content-center gap-2"
       style={{ 
         backgroundColor: backgroundColor || 'transparent',
@@ -238,16 +298,68 @@ export const ForumButtonSettings = () => {
                   onChange={(e) => setProp((p) => (p.text = e.target.value))}
                 />
               </div>
-              <div>
-                <label className="form-label">Ruta</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  value={props.route || '/forum'}
-                  onChange={(e) => setProp((p) => (p.route = e.target.value))}
-                  placeholder="/forum"
-                />
+              
+              {/* Sistema de navegación */}
+              <div className="border rounded p-2" style={{ backgroundColor: '#f8f9fa' }}>
+                <label className="form-label fw-bold mb-2">
+                  <i className="bi bi-link-45deg me-1"></i> Acción del Botón
+                </label>
+                
+                <div className="mb-2">
+                  <select
+                    className="form-select form-select-sm"
+                    value={props.actionType || 'none'}
+                    onChange={(e) => setProp((p) => (p.actionType = e.target.value))}
+                  >
+                    <option value="none">Sin acción</option>
+                    <option value="section">Ir a Sección</option>
+                    <option value="external">Link Externo</option>
+                    <option value="route">Ruta Interna</option>
+                  </select>
+                </div>
+                
+                {props.actionType === 'section' && (
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="Nombre sección (ej: foro, fauna)"
+                    value={props.sectionName || ''}
+                    onChange={(e) => setProp((p) => (p.sectionName = e.target.value))}
+                  />
+                )}
+                
+                {props.actionType === 'external' && (
+                  <div className="d-grid gap-2">
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="URL (https://...)"
+                      value={props.externalUrl || ''}
+                      onChange={(e) => setProp((p) => (p.externalUrl = e.target.value))}
+                    />
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={props.externalNewTab !== false}
+                        onChange={(e) => setProp((p) => (p.externalNewTab = e.target.checked))}
+                      />
+                      <label className="form-check-label small">Abrir en nueva pestaña</label>
+                    </div>
+                  </div>
+                )}
+                
+                {props.actionType === 'route' && (
+                  <div>
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="Ruta (ej: /login o #seccion)"
+                      value={props.to || ''}
+                      onChange={(e) => setProp((p) => (p.to = e.target.value))}
+                    />
+                    <small className="text-muted">Usa # para ir a una sección de la página</small>
+                  </div>
+                )}
               </div>
+
               <div className="form-check">
                 <input
                   className="form-check-input"
@@ -454,7 +566,11 @@ ForumButton.craft = {
     borderColor: 'transparent',
     showIcon: true,
     showText: false,
-    route: '/forum',
+    actionType: 'route',
+    to: '/forum',
+    sectionName: '',
+    externalUrl: '',
+    externalNewTab: false,
     translateX: 0,
     translateY: 0,
     zIndex: 0,

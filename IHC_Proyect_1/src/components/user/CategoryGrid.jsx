@@ -1,5 +1,5 @@
 // components/user/CategoryGrid.jsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { useUploadImage } from '../../hooks/useUploadImage';
@@ -14,15 +14,7 @@ export const CategoryGrid = ({
   gap = 16,
   columns = 4,
   // Categories (JSON string for Craft compatibility)
-  categories = JSON.stringify([
-    { id: 1, name: 'Tribus indigenas', image: '' },
-    { id: 2, name: 'Fauna', image: '' },
-    { id: 3, name: 'Flora', image: '' },
-    { id: 4, name: 'Usos sostenibles', image: '' },
-    { id: 5, name: 'Agua', image: '' },
-    { id: 6, name: 'Cultura', image: '' },
-    { id: 7, name: 'Geografia', image: '' },
-  ]),
+  categories = '[]',
   // Positioning
   translateX = 0,
   translateY = 0,
@@ -65,13 +57,27 @@ export const CategoryGrid = ({
     document.addEventListener('mouseup', onMouseUp);
   };
 
+  // Memoize default value
+  const defaultCategories = useMemo(() => JSON.stringify([
+    { id: 1, name: 'Tribus indigenas', image: '' },
+    { id: 2, name: 'Fauna', image: '' },
+    { id: 3, name: 'Flora', image: '' },
+    { id: 4, name: 'Usos sostenibles', image: '' },
+    { id: 5, name: 'Agua', image: '' },
+    { id: 6, name: 'Cultura', image: '' },
+    { id: 7, name: 'Geografia', image: '' },
+  ]), []);
+
+  const categoriesToUse = categories && categories !== '[]' ? categories : defaultCategories;
+
   // Parse categories
-  let parsedCategories = [];
-  try {
-    parsedCategories = typeof categories === 'string' ? JSON.parse(categories) : categories;
-  } catch (e) {
-    parsedCategories = [];
-  }
+  const parsedCategories = useMemo(() => {
+    try {
+      return typeof categoriesToUse === 'string' ? JSON.parse(categoriesToUse) : categoriesToUse;
+    } catch (e) {
+      return [];
+    }
+  }, [categoriesToUse]);
 
   const containerStyle = {
     backgroundColor,

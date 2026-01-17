@@ -1,5 +1,5 @@
 // components/user/NewsSection.jsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNode, useEditor, Element } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { Text } from './Text';
@@ -15,29 +15,7 @@ export const NewsSection = ({
   padding = 60,
   gap = 24,
   // News items (JSON string for Craft compatibility)
-  newsItems = JSON.stringify([
-    {
-      id: 1,
-      image: '',
-      category: 'Ambiente',
-      title: 'Por qué la Amazonia no produce realmente el 20% del oxigeno del mundo',
-      size: 'large'
-    },
-    {
-      id: 2,
-      image: '',
-      category: 'Oceano',
-      title: 'Descubre las maravillas del oceano',
-      size: 'small'
-    },
-    {
-      id: 3,
-      image: '',
-      category: 'Animales',
-      title: '¿Se están domesticando los zorros?',
-      size: 'small'
-    }
-  ]),
+  newsItems = '[]',
   // Positioning
   translateX = 0,
   translateY = 0,
@@ -80,13 +58,40 @@ export const NewsSection = ({
     document.addEventListener('mouseup', onMouseUp);
   };
 
+  const defaultNewsItems = useMemo(() => JSON.stringify([
+    {
+      id: 1,
+      image: '',
+      category: 'Ambiente',
+      title: 'Por qué la Amazonia no produce realmente el 20% del oxigeno del mundo',
+      size: 'large'
+    },
+    {
+      id: 2,
+      image: '',
+      category: 'Oceano',
+      title: 'Descubre las maravillas del oceano',
+      size: 'small'
+    },
+    {
+      id: 3,
+      image: '',
+      category: 'Animales',
+      title: '¿Se están domesticando los zorros?',
+      size: 'small'
+    }
+  ]), []);
+
+  const newsItemsToUse = newsItems && newsItems !== '[]' ? newsItems : defaultNewsItems;
+
   // Parse news items
-  let parsedItems = [];
-  try {
-    parsedItems = typeof newsItems === 'string' ? JSON.parse(newsItems) : newsItems;
-  } catch (e) {
-    parsedItems = [];
-  }
+  const parsedItems = useMemo(() => {
+    try {
+      return typeof newsItemsToUse === 'string' ? JSON.parse(newsItemsToUse) : newsItemsToUse;
+    } catch (e) {
+      return [];
+    }
+  }, [newsItemsToUse]);
 
   const largeItem = parsedItems.find(item => item.size === 'large') || parsedItems[0];
   const smallItems = parsedItems.filter(item => item.size === 'small' || item.id !== largeItem?.id).slice(0, 2);

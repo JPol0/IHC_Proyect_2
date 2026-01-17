@@ -1,11 +1,22 @@
 // components/user/FeatureGrid.jsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNode, Element, useEditor } from '@craftjs/core';
 import { SettingsTabs } from '../ui/SettingsTabs';
 import { FeatureCard } from './FeatureCard';
 
 export const FeatureGrid = ({
-  cards = JSON.stringify([
+  cards = '[]',
+  columns = 3,
+  gap = 15,
+  padding = 20,
+  maxWidth = '1000px',
+  backgroundColor = 'transparent',
+  opacity = 1,
+  translateX = 0,
+  translateY = 0,
+}) => {
+  // Memoize default value to prevent parse overhead on every render if cards is undefined/null
+  const defaultCards = useMemo(() => JSON.stringify([
     {
       id: 1,
       image: 'https://placehold.co/800x600',
@@ -46,16 +57,9 @@ export const FeatureGrid = ({
       actionType: 'section',
       sectionName: 'geografia'
     }
-  ]),
-  columns = 3,
-  gap = 15,
-  padding = 20,
-  maxWidth = '1000px',
-  backgroundColor = 'transparent',
-  opacity = 1,
-  translateX = 0,
-  translateY = 0,
-}) => {
+  ]), []);
+
+  const cardsToUse = cards && cards !== '[]' ? cards : defaultCards;
   const {
     connectors: { connect, drag },
     selected,
@@ -96,12 +100,14 @@ export const FeatureGrid = ({
   };
 
   // Parse cards
-  let parsedCards = [];
-  try {
-    parsedCards = JSON.parse(cards);
-  } catch (e) {
-    console.warn("FeatureGrid: Error parsing cards JSON", e);
-  }
+  const parsedCards = useMemo(() => {
+    try {
+      return JSON.parse(cardsToUse);
+    } catch (e) {
+      console.warn("FeatureGrid: Error parsing cards JSON", e);
+      return [];
+    }
+  }, [cardsToUse]);
 
   return (
     <div
@@ -109,9 +115,12 @@ export const FeatureGrid = ({
       style={{
         position: 'relative',
         display: 'grid',
+        gridTemplateColumns: `repeat(${Number(columns) || 3}, 1fr)`,
+        gap: `${Number(gap) || 15}px`,
+        padding: `${Number(padding) || 0}px`,
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gap: `${gap}px`,
-        padding: `${padding}px`,
+        padding: `${Number(padding) || 20}px`,
         width: '100%',
         maxWidth: maxWidth,
         margin: '0 auto',

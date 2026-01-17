@@ -40,6 +40,7 @@ import { FeatureGrid } from './components/user/FeatureGrid';
 import { Grid2 } from './components/user/Grid2';
 import { Grid3 } from './components/user/Grid3';
 import { GridCol } from './components/user/GridCol';
+import { Rectangle } from './components/user/Rectangle';
 
 // Estilos necesarios para que el sitio exportado luzca igual
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -84,6 +85,7 @@ const resolver = {
   Grid2,
   Grid3,
   GridCol,
+  Rectangle,
 };
 
 // Nombres de componentes válidos

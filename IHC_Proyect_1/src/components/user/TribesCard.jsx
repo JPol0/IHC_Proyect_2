@@ -14,8 +14,18 @@ export const TribesCard = ({
   buttonColor = '#000000',
   buttonTextColor = '#ffffff',
   buttonHoverColor = '#ff6b35',
-  linkUrl = '#',
-  linkNewTab = false,
+
+  // Updated Standardized Link Props
+  actionType = 'none', // 'none', 'route', 'section', 'external'
+  route = '', // internal route path
+  sectionName = '', // for section navigation
+  externalUrl = '', // for external links
+  newTab = false,
+
+  // Legacy (for migration)
+  linkUrl,
+  linkNewTab,
+  
   // Estilos
   backgroundColor = '#ffffff',
   borderRadius = 8,
@@ -40,6 +50,27 @@ export const TribesCard = ({
   }));
   
   const navigate = useNavigate();
+
+  // Migration for legacy props
+  React.useEffect(() => {
+    if (linkUrl) {
+      if (linkUrl.startsWith('http')) {
+        setProp(props => {
+          props.actionType = 'external';
+          props.externalUrl = linkUrl;
+          props.newTab = !!linkNewTab;
+          props.linkUrl = undefined;
+          props.linkNewTab = undefined;
+        });
+      } else {
+        setProp(props => {
+          props.actionType = 'route';
+          props.route = linkUrl;
+          props.linkUrl = undefined;
+        });
+      }
+    }
+  }, [linkUrl, linkNewTab, setProp]);
 
   const handleMouseDown = (e) => {
     e.stopPropagation();
@@ -67,19 +98,46 @@ export const TribesCard = ({
     document.addEventListener('mouseup', onMouseUp);
   };
 
+  const handleMouseDownStop = (e) => {
+    e.stopPropagation();
+  };
+
   const handleButtonClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Ejecutar siempre, pero en modo edición también prevenir la selección del componente
-    if (linkUrl.startsWith('http')) {
-      window.open(linkUrl, linkNewTab ? '_blank' : '_self');
-    } else {
-      navigate(linkUrl);
-    }
-  };
 
-  const handleMouseDownStop = (e) => {
-    e.stopPropagation();
+    // Prevent navigation in editor mode
+    if (enabled) return;
+
+    if (actionType === 'section') {
+      const site = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('site') : null;
+      const qs = new URLSearchParams();
+      if (site) qs.set('site', site);
+      if (sectionName) qs.set('section', sectionName);
+      const target = sectionName ? `/editor?${qs.toString()}` : '';
+
+      if (!target) return;
+      navigate(target);
+      return;
+    }
+
+    if (actionType === 'external') {
+      const url = (externalUrl || '').trim();
+      if (!url) return;
+      window.open(url, newTab ? '_blank' : '_self');
+      return;
+    }
+
+    if (actionType === 'route') {
+      const r = (route || '').trim();
+      if (!r) return;
+      if (r.startsWith('#')) {
+        const el = document.querySelector(r);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      navigate(r);
+    }
   };
 
   return (
@@ -272,26 +330,64 @@ const TribesCardSettings = () => {
                 />
               </div>
               
-              <div>
-                <label className="form-label">Link del Botón "LEER"</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  value={props.linkUrl || '#'}
-                  onChange={(e) => setProp((p) => (p.linkUrl = e.target.value))}
-                  placeholder="/ruta o https://..."
-                />
-                <small className="text-muted">Ruta interna (ej: /tribus/ubicacion) o URL externa (ej: https://...). El botón navegará a esta URL al hacer clic.</small>
-              </div>
-              
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={props.linkNewTab || false}
-                  onChange={(e) => setProp((p) => (p.linkNewTab = e.target.checked))}
-                />
-                <label className="form-check-label">Abrir en nueva pestaña</label>
+              <div className="border rounded p-2" style={{ backgroundColor: '#f8f9fa' }}>
+                <label className="form-label fw-bold mb-2">
+                  <i className="bi bi-link-45deg me-1"></i> Acción del Botón
+                </label>
+                
+                <div className="mb-2">
+                  <select
+                    className="form-select form-select-sm"
+                    value={props.actionType || 'none'}
+                    onChange={(e) => setProp((p) => (p.actionType = e.target.value))}
+                  >
+                    <option value="none">Sin acción</option>
+                    <option value="section">Ir a Sección</option>
+                    <option value="external">Link Externo</option>
+                    <option value="route">Ruta Interna</option>
+                  </select>
+                </div>
+                
+                {props.actionType === 'section' && (
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="Nombre sección (ej: foro, fauna)"
+                    value={props.sectionName || ''}
+                    onChange={(e) => setProp((p) => (p.sectionName = e.target.value))}
+                  />
+                )}
+                
+                {props.actionType === 'external' && (
+                  <div className="d-grid gap-2">
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="URL (https://...)"
+                      value={props.externalUrl || ''}
+                      onChange={(e) => setProp((p) => (p.externalUrl = e.target.value))}
+                    />
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={props.newTab !== false}
+                        onChange={(e) => setProp((p) => (p.newTab = e.target.checked))}
+                      />
+                      <label className="form-check-label small">Abrir en nueva pestaña</label>
+                    </div>
+                  </div>
+                )}
+                
+                {props.actionType === 'route' && (
+                  <div>
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="Ruta (ej: /login o #seccion)"
+                      value={props.route || ''}
+                      onChange={(e) => setProp((p) => (p.route = e.target.value))}
+                    />
+                    <small className="text-muted">Usa # para ir a una sección de la página</small>
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -457,8 +553,11 @@ TribesCard.craft = {
     buttonColor: '#000000',
     buttonTextColor: '#ffffff',
     buttonHoverColor: '#ff6b35',
-    linkUrl: '#',
-    linkNewTab: false,
+    actionType: 'none',
+    sectionName: '',
+    externalUrl: '',
+    route: '',
+    newTab: false,
     backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 20,

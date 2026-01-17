@@ -11,11 +11,11 @@ export const FeatureCard = ({
   buttonText = 'LEER',
   
   // Navigation (mismo sistema que Navbar)
-  actionType = 'none', // 'none' | 'section' | 'external' | 'route'
+  actionType = 'route', // 'route' | 'section' | 'external'
+  to = '',             // internal route
   sectionName = '',    // Para actionType: 'section'
   externalUrl = '',    // Para actionType: 'external'
-  route = '',          // Para actionType: 'route' (puede incluir # para scroll)
-  newTab = false,      // Para links externos
+  externalNewTab = true, // Para links externos
   
   // DEPRECATED: Compatibilidad hacia atrás
   linkUrl,             // Old prop - se convierte automáticamente
@@ -69,21 +69,21 @@ export const FeatureCard = ({
         setProp((props) => {
           props.actionType = 'external';
           props.externalUrl = linkUrl;
-          props.newTab = linkNewTab !== undefined ? linkNewTab : false;
+          props.externalNewTab = linkNewTab !== undefined ? linkNewTab : false;
           delete props.linkUrl;
           delete props.linkNewTab;
         });
       } else if (linkUrl.startsWith('#')) {
         setProp((props) => {
           props.actionType = 'route';
-          props.route = linkUrl;
+          props.to = linkUrl;
           delete props.linkUrl;
           delete props.linkNewTab;
         });
       } else if (linkUrl && linkUrl !== '#') {
         setProp((props) => {
           props.actionType = 'route';
-          props.route = linkUrl;
+          props.to = linkUrl;
           delete props.linkUrl;
           delete props.linkNewTab;
         });
@@ -135,6 +135,11 @@ export const FeatureCard = ({
       if (sectionName) qs.set('section', sectionName);
       const target = sectionName ? `/editor?${qs.toString()}` : '';
       if (!target) return;
+      if (target.startsWith('#')) {
+        const el = document.querySelector(target);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
       navigate(target);
       return;
     }
@@ -143,25 +148,21 @@ export const FeatureCard = ({
       const url = (externalUrl || '').trim();
       if (!url) return;
       if (typeof window !== 'undefined') {
-        window.open(url, newTab ? '_blank' : '_self');
+        window.open(url, externalNewTab ? '_blank' : '_self');
       }
       return;
     }
     
-    if (actionType === 'route') {
-      const targetRoute = (route || '').trim();
-      if (targetRoute) {
-        if (targetRoute.startsWith('#')) {
-          const el = document.querySelector(targetRoute);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          return;
-        }
-        navigate(targetRoute);
+    // Default: internal route
+    const route = (to || '').trim();
+    if (route) {
+      if (route.startsWith('#')) {
+        const el = document.querySelector(route);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
       }
-      return;
+      navigate(route);
     }
-    
-    // actionType === 'none' - no hacer nada
   };
 
   const commonStyle = {
