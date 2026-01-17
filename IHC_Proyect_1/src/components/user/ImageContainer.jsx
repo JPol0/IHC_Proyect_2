@@ -425,6 +425,19 @@ export function BackgroundImageContainerSettings() {
                       <option value="flex-end">Final</option>
                     </select>
                   </div>
+                  <div>
+                    <label className="form-label">Espaciado (Gap)</label>
+                    <input
+                      type="range"
+                      className="form-range"
+                      min={0}
+                      max={64}
+                      step={4}
+                      value={props.gap ?? 8}
+                      onChange={(e) => setProp((p) => (p.gap = Number(e.target.value)))}
+                    />
+                    <div className="small text-muted">{props.gap ?? 8}px</div>
+                  </div>
                 </>
               )}
             </div>

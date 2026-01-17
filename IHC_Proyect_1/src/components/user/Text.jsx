@@ -3,7 +3,30 @@ import React, { useEffect, useState } from "react";
 import { useNode, useEditor } from "@craftjs/core";
 import { SettingsTabs } from "../ui/SettingsTabs";
 
-export const Text = ({ text, fontSize, fontClass, translateX = 0, translateY = 0, zIndex = 0, opacity = 1, textColor = '#000000', textShadowX = 0, textShadowY = 0, textShadowBlur = 0, textShadowColor = '#000000', textAlign = 'left', lineHeight = 1.5 }) => {
+export const Text = ({ 
+  text, 
+  fontSize, 
+  fontClass, 
+  maxWidth, 
+  translateX = 0, 
+  translateY = 0, 
+  zIndex = 0, 
+  opacity = 1, 
+  textColor = '#000000', 
+  textShadowX = 0, 
+  textShadowY = 0, 
+  textShadowBlur = 0, 
+  textShadowColor = '#000000', 
+  textAlign = 'left', 
+  lineHeight = 1.5,
+  // Borde y Padding
+  padding,
+  paddingVertical = padding || 0,
+  paddingHorizontal = padding || 0,
+  borderWidth = 0,
+  borderColor = '#000000',
+  borderRadius = 0,
+}) => {
   const { id, connectors: { connect, drag }, hasSelectedNode, hasDraggedNode, actions: { setProp } } = useNode((state) => ({
     hasSelectedNode: state.events.selected,
     hasDraggedNode: state.events.dragged
@@ -47,10 +70,15 @@ export const Text = ({ text, fontSize, fontClass, translateX = 0, translateY = 0
       onClick={() => setEditable(true)}
       style={{ 
         display: 'inline-block', // Permite que el texto se coloque al lado de otros
+        maxWidth: maxWidth ? `${maxWidth}px` : '100%',
         transform: `translate(${Number(translateX) || 0}px, ${Number(translateY) || 0}px)`, 
         opacity: Math.max(0, Math.min(1, Number(opacity) || 0)), 
         position: 'relative', 
-        zIndex: Number(zIndex) || 0 
+        zIndex: Number(zIndex) || 0,
+        // Estilos de caja
+        padding: `${Number(paddingVertical) || 0}px ${Number(paddingHorizontal) || 0}px`,
+        border: `${Number(borderWidth) || 0}px solid ${borderColor || '#000000'}`,
+        borderRadius: `${Number(borderRadius) || 0}px`,
       }}
     >
       <p
@@ -173,6 +201,16 @@ const TextSettings = () => {
                 </select>
               </div>
               <div>
+                <label className="form-label">Ancho máximo (px)</label>
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
+                  placeholder="Ej: 300 (vacío = 100%)"
+                  value={props.maxWidth || ''}
+                  onChange={(e) => setProp(p => p.maxWidth = Number(e.target.value))}
+                />
+              </div>
+              <div>
                 <label className="form-label">Tamaño de fuente</label>
                 <input
                   type="range"
@@ -220,6 +258,79 @@ const TextSettings = () => {
                   onChange={(e) => setProp((p) => (p.textColor = e.target.value))}
                 />
               </div>
+            </div>
+          )
+        },
+        {
+          label: "Estilo",
+          content: (
+            <div className="d-grid gap-3">
+              {/* Padding */}
+              <div>
+                <label className="form-label">Padding Horizontal</label>
+                 <input
+                  type="range"
+                  className="form-range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={Number.isFinite(props.paddingHorizontal) ? props.paddingHorizontal : (props.padding || 0)}
+                  onChange={(e) => setProp((p) => (p.paddingHorizontal = Number(e.target.value)))}
+                />
+                <div className="small text-muted">{props.paddingHorizontal ?? props.padding ?? 0}px</div>
+              </div>
+              <div>
+                <label className="form-label">Padding Vertical</label>
+                 <input
+                  type="range"
+                  className="form-range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={Number.isFinite(props.paddingVertical) ? props.paddingVertical : (props.padding || 0)}
+                  onChange={(e) => setProp((p) => (p.paddingVertical = Number(e.target.value)))}
+                />
+                <div className="small text-muted">{props.paddingVertical ?? props.padding ?? 0}px</div>
+              </div>
+
+               {/* Borde */}
+               <div className="border-top pt-3">
+                <label className="form-label fw-bold">Borde</label>
+                <div className="row g-2 mb-2">
+                   <div className="col-12">
+                     <label className="form-label small">Grosor</label>
+                     <input
+                      type="range"
+                      className="form-range"
+                      min={0}
+                      max={20}
+                      value={Number.isFinite(props.borderWidth) ? props.borderWidth : 0}
+                      onChange={(e) => setProp((p) => (p.borderWidth = Number(e.target.value)))}
+                    />
+                    <div className="small text-muted">{props.borderWidth ?? 0}px</div>
+                   </div>
+                   
+                   <div className="col-6">
+                     <label className="form-label small">Color</label>
+                     <input
+                      type="color"
+                      className="form-control form-control-color"
+                      value={props.borderColor || '#000000'}
+                      onChange={(e) => setProp((p) => (p.borderColor = e.target.value))}
+                    />
+                   </div>
+                    <div className="col-6">
+                     <label className="form-label small">Radio</label>
+                     <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      min={0}
+                      value={Number.isFinite(props.borderRadius) ? props.borderRadius : 0}
+                      onChange={(e) => setProp((p) => (p.borderRadius = Number(e.target.value)))}
+                    />
+                   </div>
+                </div>
+               </div>
             </div>
           )
         },
@@ -331,6 +442,7 @@ Text.craft = {
     text: "Texto de ejemplo",
     fontSize: 20,
     fontClass: '',
+    maxWidth: null,
     translateX: 0,
     translateY: 0,
     zIndex: 0,
@@ -341,7 +453,12 @@ Text.craft = {
     textShadowBlur: 0,
     textShadowColor: '#000000',
     textAlign: 'left',
-    lineHeight: 1.5
+    lineHeight: 1.5,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    borderWidth: 0,
+    borderColor: '#000000',
+    borderRadius: 0,
   },
   rules:{
     canDrag: (node) => node.data.props.text !== "Drag",
