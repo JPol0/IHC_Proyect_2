@@ -161,18 +161,28 @@ function prefetchImagesFromRoutes(routes) {
  */
 function normalizeCraftState(rawState) {
   try {
-    // 1. Parsear
-    let obj = typeof rawState === 'string' ? JSON.parse(rawState) : JSON.parse(JSON.stringify(rawState));
+    // 1. Parsear o usar objeto directo (Evitar clonación profunda para rendimiento)
+    // Si rawState es un objeto (ej: window.__CRAFT_PAGE_STATE__), lo modificamos in-place
+    // para evitar cuellos de botella en la inicialización (structuredClone/JSON stringify son lentos en data grande).
+    let obj = rawState;
+    if (typeof rawState === 'string') {
+        try {
+            obj = JSON.parse(rawState);
+        } catch (e) {
+            console.error('[normalize] Error parseando JSON string:', e);
+            throw e;
+        }
+    }
     
     // 2. Fallback si no es objeto
     if (!obj || typeof obj !== 'object') {
       console.warn('[normalize] Estado inválido, usando fallback vacío');
-      return JSON.stringify({ 
+      return { 
         ROOT: { 
           data: { type: { resolvedName: 'BackgroundImageContainer' }, props: { padding: 0 } }, 
           nodes: [], linkedNodes: {}, isCanvas: true, displayName: 'ROOT' 
         } 
-      });
+      };
     }
 
     // 3. Aplanar estructura anidada (si existe obj.nodes y NO es array)
@@ -292,17 +302,17 @@ function normalizeCraftState(rawState) {
        }
     });
 
-    return JSON.stringify(obj);
+    return obj;
 
   } catch (e) {
     console.error('[normalize] Error fatal:', e);
     // Fallback de emergencia absoluto
-    return JSON.stringify({ 
+    return { 
         ROOT: { 
             data: { type: { resolvedName: 'BackgroundImageContainer' }, props: {} }, 
             nodes: [], linkedNodes: {}, isCanvas: true, displayName: 'ROOT' 
         } 
-    });
+    };
   }
 }
 
@@ -478,10 +488,8 @@ const mount = () => {
       return;
     }
     
-    // Check if state is available
-    if (!window.__CRAFT_PAGE_STATE__) {
-      console.warn('Advertencia: window.__CRAFT_PAGE_STATE__ es null o undefined al montar.');
-    }
+    // Nota: Eliminamos la advertencia sobre window.__CRAFT_PAGE_STATE__ aquí, 
+    // ya que Loader se encarga de esperarlo y la advertencia temprana puede ser confusa.
 
     try {
       // Fija color de fondo global del documento exportado
